@@ -52,7 +52,7 @@ function Profile() {
         <input
           type="date"
           name="birthdate"
-          value={formData.birth}
+          value={formData.birthdate}
           onChange={handleChange}
           required
         />

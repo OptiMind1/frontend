@@ -11,6 +11,8 @@ import CommunityPage from "./pages/CommunityPage";
 import CompetitionDetail from "./pages/CompetitionDetail";
 import CreatePostPage from "./pages/CreatePostPage";
 import { UserProvider } from "./contexts/UserContext"; // ✅ 추가
+import MyPagefix from "./pages/MyPagefix";
+
 
 function App() {
   return (
@@ -21,6 +23,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypagefix" element={<MyPagefix />} />  
           <Route path="/profile" element={<Profile />} />
           <Route path="/intro" element={<Intro />} />
           <Route path="/competition" element={<CompetitionPage />} />

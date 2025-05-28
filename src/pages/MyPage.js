@@ -15,7 +15,7 @@ function MyPage() {
         const token = localStorage.getItem("access_token");
         console.log("보내는 토큰:", token);  // ✅ 추가
       
-        const res = await api.get("/api/profiles/me/", {
+        const res = await api.get("/api/profiles/create/", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

@@ -18,8 +18,8 @@ function MyPagefix() {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (name === "profileImage") {
-      setFormData((prev) => ({ ...prev, profileImage: files[0] }));
+    if (name === "profile_image") {
+      setFormData((prev) => ({ ...prev, profile_image: files[0] }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -34,11 +34,29 @@ function MyPagefix() {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
+
       const data = new FormData();
+
       Object.keys(formData).forEach((key) => {
-        data.append(key, formData[key]);
+        let value = formData[key];
+
+        // JSONField인 경우 문자열 → 배열 → JSON 문자열로 변환
+        if (key === "languages" || key === "interests") {
+          value = JSON.stringify(value.split(",").map((v) => v.trim()));
+        }
+
+        // null이나 빈 값은 생략
+        if (value !== null && value !== "") {
+          data.append(key, value);
+        }
       });
+
+      // 확인용 디버깅 출력
+      for (let [key, value] of data.entries()) {
+        console.log(key, value);
+      }
 
       await api.post("/api/profiles/create/", data, {
         headers: {
@@ -49,9 +67,30 @@ function MyPagefix() {
 
       alert("추가 정보 저장 완료");
     } catch (err) {
+      console.error("서버 응답:", err.response?.data); // 디버깅용 출력
       alert("저장 실패: " + (err.response?.data?.message || err.message));
     }
   };
+
+      
+  //     const data = new FormData();
+
+  //     Object.keys(formData).forEach((key) => {
+  //       data.append(key, formData[key]);
+  //     });
+
+  //     await api.post("/api/profiles/create/", data, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "Content-Type": "multipart/form-data",
+  //       },
+  //     });
+
+  //     alert("추가 정보 저장 완료");
+  //   } catch (err) {
+  //     alert("저장 실패: " + (err.response?.data?.message || err.message));
+  //   }
+  // };
 
   return (
     <div className="profile-container">
