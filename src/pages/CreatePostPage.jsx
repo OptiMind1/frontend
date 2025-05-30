@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
-import axios from "axios";
+import api from "../api"; 
 import { useUser } from "../contexts/UserContext"; // ✅ 수정된 부분
 
 export default function CreatePostPage() {
@@ -13,19 +13,48 @@ export default function CreatePostPage() {
   const navigate = useNavigate();
   const { user } = useUser(); // ✅ 수정된 부분
 
+  // ✅ 페이지 진입 시 로그인 확인
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    console.log("🧪 user from useUser():", user);
+    console.log("🧪 access_token:", token);
+  
+    if (!user || !token) {
+      alert("로그인이 필요한 기능입니다.");
+      navigate("/community");
+    }
+  }, [user, navigate]);
+
+  // 게시판 이름 → 백엔드 category 코드 매핑
+  const convertTabToCategory = (tab) => {
+    switch (tab) {
+      case "자유게시판": return "free";
+      case "홍보게시판": return "promo";
+      case "후기모음": return "review";
+      case "질문게시판": return "question";
+      default: return "free";
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!title || !content) return;
+    if (!title || !content) {
+      alert("제목과 내용을 입력해주세요.");
+      return;
+    }
 
     try {
-      await axios.post("/api/posts", {
+      await api.post("/api/community/posts/", {
         title,
         content,
-        tab,
-        authorId: user.id,
+        category: convertTabToCategory(tab),
+        // tab,
+        // authorId: user.id,
       });
+      alert("글 작성이 완료되었습니다!");
       navigate("/community");
     } catch (error) {
       console.error("게시글 작성 오류:", error);
+      alert("글 작성 중 오류가 발생했습니다.");
     }
   };
 
@@ -34,6 +63,7 @@ export default function CreatePostPage() {
       <h1 className="text-3xl font-bold mb-8">글 작성</h1>
 
       <div className="flex flex-col gap-6">
+        {/* 카테고리 선택 드롭다운 */}
         <div className="relative">
           <button
             type="button"
