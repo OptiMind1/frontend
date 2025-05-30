@@ -20,7 +20,7 @@
   display: flex;
   flex-direction: column;
 }
-
+ 
 .profile-form label {
   margin-top: 1rem;
   margin-bottom: 0.3rem;
@@ -100,6 +100,55 @@
 .univ-dropdown li:hover {
   background-color: #f0f0f0;
 }
+
+/* 복수 선택 시 보여줄 리스트 스타일 */
+.selected-list {
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  padding-left: 1.2rem;
+  color: #003366;
+  font-size: 0.95rem;
+}
+
+.selected-list li {
+  list-style-type: disc;
+  margin-bottom: 4px;
+}
+
+.profile-card {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 12px;
+  background-color: #f9f9f9;
+  margin-top: 1rem;
+}
+
+
+.nickname-check-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.nickname-check-group input {
+  flex: 1;
+}
+
+.nickname-check-group button {
+  white-space: nowrap;
+  padding: 8px 12px;
+  background-color: #004080;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.nickname-check-group button:hover {
+  background-color: #003366;
+}
+
 
   
   

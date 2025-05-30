@@ -37,14 +37,21 @@ const Profile=() => {
     password: "",
   });
 
+  const [emailCheck, setEmailCheck] = useState(null);
+  const [usernameCheck, setUsernameCheck] = useState(null);
+
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "email") setEmailCheck(null);
+    if (name === "user_id") setUsernameCheck(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    
     // 전화번호 병합
      const submitData = {
       ...formData,
@@ -62,9 +69,46 @@ const Profile=() => {
       return alert("회원가입 실패: " + (error.response?.data?.message || error.message));
     }
 
-    alert("회원가입 완료");
+    if (emailCheck !== true || usernameCheck !== true) {
+      alert("아이디와 이메일 중복 확인을 완료해주세요.");
+      return;
+    }
+    console.log(formData);
+    alert("회원가입 완료!");
     navigate("/login");
   };
+
+  const checkEmail = () => {
+    if (!formData.email.trim()) {
+      alert("이메일을 입력하세요.");
+      return;
+    }
+    console.log("Checking email:", formData.email);
+    if (formData.email === "test@example.com") {
+      alert("이미 사용 중인 이메일입니다.");
+      setEmailCheck(false);
+    } else {
+      alert("사용 가능한 이메일입니다.");
+      setEmailCheck(true);
+    }
+  };
+
+  const checkUsername = () => {
+    if (!formData.user_id.trim()) {
+      alert("아이디를 입력하세요.");
+      return;
+    }
+    console.log("Checking username:", formData.user_id);
+    if (formData.user_id === "admin") {
+      alert("이미 사용 중인 아이디입니다.");
+      setUsernameCheck(false);
+    } else {
+      alert("사용 가능한 아이디입니다.");
+      setUsernameCheck(true);
+    }
+  };
+
+
 
   return (
     <div className="profile-container">
@@ -133,22 +177,38 @@ const Profile=() => {
           />
         </div>
 
-        <input
-          type="email"
-          name="email"
-          placeholder="이메일"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="text"
-          name="user_id"
-          placeholder="아이디"
-          value={formData.user_id}
-          onChange={handleChange}
-          required
-        />
+         {/* 이메일 입력 + 중복 확인 */}
+        <div className="check-row">
+          <input
+            type="email"
+            name="email"
+            placeholder="이메일"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+          <button type="button" onClick={checkEmail}>중복 확인</button>
+        </div>
+        {emailCheck === true && <div style={{ color: "green" }}>사용 가능한 이메일입니다.</div>}
+        {emailCheck === false && <div style={{ color: "red" }}>이미 사용 중인 이메일입니다.</div>}
+
+        
+        {/* 아이디 입력 + 중복 확인 */}
+        <div className="check-row">
+          <input
+            type="text"
+            name="user_id"
+            placeholder="아이디"
+            value={formData.user_id}
+            onChange={handleChange}
+            required
+          />
+          <button type="button" onClick={checkUsername}>중복 확인</button>
+        </div>
+        {usernameCheck === true && <div style={{ color: "green" }}>사용 가능한 아이디입니다.</div>}
+        {usernameCheck === false && <div style={{ color: "red" }}>이미 사용 중인 아이디입니다.</div>}
+
+        
         <input
           type="password"
           name="password"

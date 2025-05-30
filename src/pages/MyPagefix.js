@@ -12,20 +12,60 @@ function MyPagefix() {
     degree_type: "",
     academic_year: "",
     nickname: "",
-    languages: "",
-    interests: "",
+    languages: [],
+    interests: [],
     profile_image: null,
   });
 
+  const [isNicknameUnique, setIsNicknameUnique] = useState(null); // null: 검사 전, true/false
+  const [checkingNickname, setCheckingNickname] = useState(false);
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-
-    if (name === "profile_image") {
-      setFormData((prev) => ({ ...prev, profile_image: files[0] }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "nickname") {
+      setIsNicknameUnique(null); // 닉네임 바뀌면 상태 초기화
     }
   };
+
+  const handleMultiSelectChange = (e, field) => {
+    const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
+    setFormData((prev) => ({ ...prev, [field]: selected }));
+  };
+
+  const handleFileChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      profile_image: e.target.files[0],
+    }));
+  };
+
+  const checkNickname = async () => {
+    const nicknameRegex = /^[a-zA-Z0-9가-힣]+$/;
+    if (!nicknameRegex.test(formData.nickname)) {
+      alert("닉네임을 입력해주세요.");
+      return;
+    }
+
+    try {
+      setCheckingNickname(true);
+      const res = await api.get("/api/profiles/check_nickname/", {
+        params: { nickname: formData.nickname },
+      });
+
+      if (res.data.is_duplicate) {
+        alert("이미 사용 중인 닉네임입니다.");
+        setIsNicknameUnique(false);
+      } else {
+        alert("사용 가능한 닉네임입니다.");
+        setIsNicknameUnique(true);
+      }
+    } catch (err) {
+      alert("닉네임 확인 실패: " + (err.response?.data?.message || err.message));
+    } finally {
+      setCheckingNickname(false);
+    }
+  };  
 
   const navigate = useNavigate();
 
@@ -35,6 +75,10 @@ function MyPagefix() {
     const nicknameRegex = /^[a-zA-Z0-9가-힣]+$/;
     if (!nicknameRegex.test(formData.nickname)) {
       return alert("닉네임에는 공백이나 특수문자를 사용할 수 없습니다.");
+    }
+
+    if (isNicknameUnique !== true) {
+      return alert("닉네임 중복 확인을 해주세요.");
     }
 
     try {
@@ -49,18 +93,12 @@ function MyPagefix() {
       data.append("nickname", formData.nickname);
 
       // ✅ 반드시 배열로 감싸고 JSON.stringify 해줘야 함
-      data.append("languages", JSON.stringify([formData.languages]));
-      data.append("interests", JSON.stringify([formData.interests]));
+      data.append("languages", JSON.stringify(formData.languages));
+      data.append("interests", JSON.stringify(formData.interests));
 
       if (formData.profile_image) {
         data.append("profile_image", formData.profile_image);
       }
-
-      // Object.keys(formData).forEach((key) => {
-      //   if (formData[key] !== null) {
-      //     data.append(key, formData[key]);
-      //   }
-      // });
 
       await api.post("/api/profiles/create/", data, {
         headers: {
@@ -80,37 +118,18 @@ function MyPagefix() {
 
   return (
     <div className="profile-container">
-      <h2>추가 정보 입력</h2>
-      <form onSubmit={handleSubmit}>
-        {/* 프로필 이미지 업로드 */}
-        <label htmlFor="profile_image">프로필 사진 업로드</label>
-        <input
-          type="file"
-          name="profile_image"
-          accept="image/*"
-          onChange={handleChange}
-        />
-
-        {/* 성별 선택 */}
-        <label htmlFor="gender">성별</label>
-        <select name="gender" value={formData.gender} onChange={handleChange} required>
-          <option value="">성별 선택</option>
-          <option value="male">남성</option>
-          <option value="female">여성</option>
-          <option value="other">기타</option>
-        </select>
-
-        {/* 대학교 입력 */}
+      <h2 className="profile-title">추가 정보 입력</h2>
+      <form className="profile-form" onSubmit={handleSubmit}>
+        <label htmlFor="university">대학교</label>
         <input
           type="text"
           name="university"
-          placeholder="대학교(캠퍼스)를 입력하세요"
+          placeholder="대학교명 입력"
           value={formData.university}
           onChange={handleChange}
           required
         />
 
-        {/* 학적 구분 */}
         <label htmlFor="degree_type">학적 구분</label>
         <select name="degree_type" value={formData.degree_type} onChange={handleChange} required>
           <option value="">선택</option>
@@ -118,7 +137,7 @@ function MyPagefix() {
           <option value="graduate">대학원생</option>
         </select>
 
-        {/* 학년 */}
+        <label htmlFor="academic_year">학년</label>
         <input
           type="text"
           name="academic_year"
@@ -128,10 +147,22 @@ function MyPagefix() {
           required
         />
 
-        {/* 사용 언어 */}
-        <label htmlFor="languages">사용 언어</label>
-        <select name="languages" value={formData.languages} onChange={handleChange} required>
-          <option value="">언어 선택</option>
+        <label htmlFor="gender">성별</label>
+        <select name="gender" value={formData.gender} onChange={handleChange} required>
+          <option value="">선택</option>
+          <option value="male">남성</option>
+          <option value="female">여성</option>
+          <option value="other">기타</option>
+        </select>
+
+        <label htmlFor="languages">사용 언어 (여러 개 선택 시, ctrl을 누르고 선택해주세요.)</label>
+        <select
+          name="languages"
+          multiple
+          value={formData.languages}
+          onChange={(e) => handleMultiSelectChange(e, "languages")}
+          required
+        >
           <option value="Korean">Korean</option>
           <option value="English">English</option>
           <option value="Vietnamese">Vietnamese</option>
@@ -143,21 +174,42 @@ function MyPagefix() {
           <option value="Spanish">Spanish</option>
           <option value="Arabic">Arabic</option>
         </select>
+        <ul className="selected-list">
+          {formData.languages.map((lang, idx) => (
+            <li key={idx}>{lang}</li>
+          ))}
+        </ul>
+        <label htmlFor="nickname">닉네임</label>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <input
+            type="text"
+            name="nickname"
+            placeholder="닉네임"
+            value={formData.nickname}
+            onChange={handleChange}
+            required
+            style={{ flex: 1 }}
+          />
+          <button
+            type="button"
+            onClick={checkNickname}
+            disabled={checkingNickname}
+            style={{ whiteSpace: "nowrap" }}
+          >
+            {checkingNickname ? "확인 중..." : "중복 확인"}
+          </button>
+        </div>
+        {isNicknameUnique === true && <div style={{ color: "green" }}>사용 가능한 닉네임입니다.</div>}
+        {isNicknameUnique === false && <div style={{ color: "red" }}>이미 사용 중인 닉네임입니다.</div>}
 
-        {/* 닉네임 */}
-        <input
-          type="text"
-          name="nickname"
-          placeholder="닉네임"
-          value={formData.nickname}
-          onChange={handleChange}
+        <label htmlFor="interests">관심 분야(ctrl을 누르고 선택해주세요.)</label>
+        <select
+          name="interests"
+          multiple
+          value={formData.interests}
+          onChange={(e) => handleMultiSelectChange(e, "interests")}
           required
-        />
-
-        {/* 관심 분야 */}
-        <label htmlFor="interests">관심 분야</label>
-        <select name="interests" value={formData.interests} onChange={handleChange} required>
-          <option value="">관심 분야 선택</option>
+        >
           <option value="창업">창업</option>
           <option value="아이디어">아이디어</option>
           <option value="슬로건">슬로건</option>
@@ -184,6 +236,14 @@ function MyPagefix() {
           <option value="e스포츠">e스포츠</option>
           <option value="기타">기타</option>
         </select>
+        <ul className="selected-list">
+          {formData.interests.map((item, idx) => (
+            <li key={idx}>{item}</li>
+          ))}
+        </ul>
+
+        <label htmlFor="profile_image">프로필 사진</label>
+        <input type="file" accept="image/*" onChange={handleFileChange} />
 
         <button type="submit">저장</button>
       </form>
