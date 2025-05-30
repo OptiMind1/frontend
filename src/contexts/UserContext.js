@@ -6,10 +6,7 @@ const UserContext = createContext(null);
 // 2. Provider 컴포넌트
 export const UserProvider = ({ children }) => {
   // 로그인된 사용자 정보 (예시)
-  const [user, setUser] = useState({
-    id: "loggedInUser123",
-    username: "홍길동",
-  });
+  const [user, setUser] = useState(null);
 
   return (
     <UserContext.Provider value={{ user, setUser }}>
