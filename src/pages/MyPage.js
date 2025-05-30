@@ -62,6 +62,8 @@ function MyPage() {
       </ul>
 
       <button onClick={() => navigate("/mypagefix")}>정보 수정</button>
+      <button onClick={() => navigate("/search")}>사용자 검색</button>
+
     </div>
   );
 }

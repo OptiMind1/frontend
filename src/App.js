@@ -12,6 +12,7 @@ import CompetitionDetail from "./pages/CompetitionDetail";
 import CreatePostPage from "./pages/CreatePostPage";
 import { UserProvider } from "./contexts/UserContext"; // ✅ 추가
 import MyPagefix from "./pages/MyPagefix";
+import SearchUser from "./pages/SearchUser";
 
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
           <Route path="/competition/:id" element={<CompetitionDetail />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/create" element={<CreatePostPage />} />
+          <Route path="/search" element={<SearchUser />} />
         </Routes>
       </Router>
     </UserProvider>

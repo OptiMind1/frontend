@@ -12,7 +12,7 @@ function SearchUser() {
     if (!nickname) return alert("닉네임을 입력하세요.");
 
     try {
-      const res = await axios.get(`/api/userinfo/profile?nickname=${nickname}`);
+      const res = await api.get(`/api/profiles/search/?nickname=${nickname}`);
       setUserInfo(res.data);
     } catch (err) {
       alert("사용자를 찾을 수 없습니다.");
@@ -36,7 +36,7 @@ function SearchUser() {
       {userInfo && (
         <div className="profile-card">
           <img
-            src={userInfo.profileImageUrl}
+            src={userInfo.profile_image}
             alt="프로필"
             style={{ width: "100px", height: "100px", borderRadius: "50%" }}
           />
@@ -44,8 +44,8 @@ function SearchUser() {
           <p><strong>대학교:</strong> {userInfo.university}</p>
           <p><strong>학적:</strong> {userInfo.degree_type}</p>
           <p><strong>학년:</strong> {userInfo.academic_year}</p>
-          <p><strong>언어:</strong> {userInfo.languages.join(", ")}</p>
-          <p><strong>관심분야:</strong> {userInfo.interests.join(", ")}</p>
+          <p><strong>언어:</strong> {userInfo.languages?.join(", ")}</p>
+          <p><strong>관심분야:</strong> {userInfo.interests?.join(", ")}</p>
         </div>
       )}
     </div>
