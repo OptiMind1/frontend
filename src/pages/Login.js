@@ -3,6 +3,8 @@ import axios from "axios";
 import "./Profile.css";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import { useUser } from "../contexts/UserContext"; // ✅ 추가
+
 
 
 
@@ -10,6 +12,8 @@ function Login() {
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { setUser } = useUser(); // ✅ context의 setUser 사용
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,11 +26,18 @@ function Login() {
 
       try {
         // 🔍 프로필 있는지 확인
-        await api.get("/api/profiles/me/", {
+        const profileRes = await api.get("/api/profiles/me/", {
           headers: { Authorization: `Bearer ${token}` }
         });
+
+        const userData = profileRes.data;
+
+        localStorage.setItem("user", JSON.stringify(userData)); // ✅ localStorage 저장
+        setUser(userData); // ✅ context 반영
+
         alert("로그인 성공");
         navigate("/mypage");
+        
       } catch (profileErr) {
         alert("로그인 성공 - 추가 정보가 필요합니다.");
         // 🔍 프로필이 없으면 등록 페이지로

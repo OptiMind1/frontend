@@ -53,7 +53,7 @@ export default function CreatePostPage() {
       alert("글 작성이 완료되었습니다!");
       navigate("/community");
     } catch (error) {
-      console.error("게시글 작성 오류:", error);
+      console.error("게시글 작성 오류:", error.response?.data || error.message);
       alert("글 작성 중 오류가 발생했습니다.");
     }
   };
