@@ -22,35 +22,48 @@ function MyPage() {
         console.log("응답 데이터:", res.data);
         setUserInfo(res.data);
       } catch (err) {
+
+        const status = err.response?.status;
+
+        if (status === 400) {
+          alert("프로필이 아직 등록되지 않았습니다.");
+          navigate("/mypagefix");  // ✅ 프로필 등록 페이지로 이동
+        } else {
         console.error("회원 정보 요청 실패 응답:", err.response?.data);
         alert("회원 정보 불러오기 실패");
+        }
       }
     };
+
     fetchData();
-  }, []);
+  }, [navigate]);
 
   if (!userInfo) return <div className="profile-container">로딩 중...</div>;
 
   return (
     <div className="profile-container">
-      <h2>내 정보</h2>
-      <ul>
-        <li>이름: {userInfo.name}</li>
-        <li>생년월일: {userInfo.birthdate}</li>
-        <li>국적: {userInfo.nationality}</li>
-        <li>전화번호: {userInfo.phone}</li>
-        <li>이메일: {userInfo.email}</li>
-        <li>아이디: {userInfo.user_id}</li>
+      <h2 className="profile-title">내 정보</h2>
+
+      {/* 프로필 이미지 */}
+      <div className="profile-image-wrapper">
+        {userInfo.imageUrl ? (
+          <img src={userInfo.imageUrl} alt="프로필 이미지" className="profile-image" />
+        ) : (
+          <div className="profile-image-placeholder">이미지 없음</div>
+        )}
+      </div>
+
+      <ul className="profile-info-list">
+        <li>닉네임: {userInfo.profile.nickname}</li>
+        <li>학적/학년: {userInfo.profile.degree_type} / {userInfo.profile.academic_year}</li>
+        <li>대학교(캠퍼스): {userInfo.profile.university}</li>
+        <li>사용 가능 언어: {userInfo.profile.languages?.join(", ")}</li>
+        <li>관심 분야: {userInfo.profile.interests?.join(", ")}</li>
       </ul>
-      <button onClick={() => navigate("/mypagefix")}>추가 정보 입력</button>
+
+      <button onClick={() => navigate("/mypagefix")}>정보 수정</button>
     </div>
   );
 }
 
 export default MyPage;
-
-
-
-
-
-

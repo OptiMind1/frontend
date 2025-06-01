@@ -14,10 +14,24 @@ function Login() {
     e.preventDefault();
     try {
       const res = await api.post("/api/users/login/", { user_id : id, password });
-      localStorage.setItem("access_token", res.data.token);
-      localStorage.setItem("refresh_token", res.data.refresh)
-      alert("로그인 성공");
-      navigate("/mypage");
+      const token = res.data.access;
+      // localStorage.setItem("access_token", res.data.access);
+      localStorage.setItem("access_token", token);
+      localStorage.setItem("refresh_token", res.data.refresh);
+
+      try {
+        // 🔍 프로필 있는지 확인
+        await api.get("/api/profiles/me/", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        alert("로그인 성공");
+        navigate("/mypage");
+      } catch (profileErr) {
+        alert("로그인 성공 - 추가 정보가 필요합니다.");
+        // 🔍 프로필이 없으면 등록 페이지로
+        navigate("/mypagefix");
+      }
+
     } catch (err) {
       alert("로그인 실패: " + (err.response?.data?.message || err.message));
     }

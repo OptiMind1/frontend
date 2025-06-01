@@ -4,19 +4,38 @@ import "./Profile.css";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 
+const countries = [
+  { name: "Korea", code: "+82", flag: "🇰🇷" },
+  { name: "USA", code: "+1", flag: "🇺🇸" },
+  { name: "Vietnam", code: "+84", flag: "🇻🇳" },
+  { name: "India", code: "+91", flag: "🇮🇳" },
+  { name: "China", code: "+86", flag: "🇨🇳" },
+  { name: "Japan", code: "+81", flag: "🇯🇵" },
+  { name: "France", code: "+33", flag: "🇫🇷" },
+  { name: "Germany", code: "+49", flag: "🇩🇪" },
+  { name: "Mexico", code: "+52", flag: "🇲🇽" },
+  { name: "Brazil", code: "+55", flag: "🇧🇷" },
+  { name: "UK", code: "+44", flag: "🇬🇧" },
+  { name: "Canada", code: "+1", flag: "🇨🇦" },
+  { name: "Indonesia", code: "+62", flag: "🇮🇩" },
+  { name: "Russia", code: "+7", flag: "🇷🇺" },
+  { name: "Spain", code: "+34", flag: "🇪🇸" },
+];
 
-function Profile() {
+const Profile=() => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: "",
     birthdate: "",
     nationality: "",
-    phone: "",
+    phoneCode: "+82",
+    phoneMiddle: "",
+    phoneLast: "",
     email: "",
     user_id: "",
     password: "",
   });
-
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -25,78 +44,115 @@ function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 전화번호 병합
+     const submitData = {
+      ...formData,
+      phone: `${formData.phoneCode}-${formData.phoneMiddle}-${formData.phoneLast}`
+    };
+
+    // 불필요한 필드 제거
+    delete submitData.phoneCode;
+    delete submitData.phoneMiddle;
+    delete submitData.phoneLast;
+
     try {
-      await api.post("/api/users/signup/", formData);
-      alert("회원가입 완료");
-      navigate("/login");
+      await api.post("/api/users/signup/", submitData);
     } catch (error) {
-      console.log("에러 응답:", error.response?.data);  // 🔍 추가
-      alert("회원가입 실패: " + (error.response?.data?.message || error.message));
+      return alert("회원가입 실패: " + (error.response?.data?.message || error.message));
     }
+
+    alert("회원가입 완료");
+    navigate("/login");
   };
 
   return (
     <div className="profile-container">
       <h2 className="profile-title">회원가입</h2>
       <form className="profile-form" onSubmit={handleSubmit}>
-        <label>이름</label>
         <input
           type="text"
           name="name"
+          placeholder="이름 (본명)"
           value={formData.name}
           onChange={handleChange}
           required
         />
-
-        <label>생년월일</label>
         <input
           type="date"
           name="birthdate"
-          value={formData.birth}
+          value={formData.birthdate}
           onChange={handleChange}
           required
         />
-
-        <label>국적</label>
-        <input
-          type="text"
+        <select
           name="nationality"
           value={formData.nationality}
           onChange={handleChange}
           required
-        />
+        >
+          <option value="">국적 선택</option>
+          {countries.map((c) => (
+            <option key={c.code} value={c.name}>
+              {c.name}
+            </option>
+          ))}
+        </select>
 
-        <label>전화번호</label>
-        <input
-          type="tel"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-          required
-        />
+        {/* 전화번호 입력 */}
+        <div className="phone-input-group">
+          <select
+            name="phoneCode"
+            value={formData.phoneCode}
+            onChange={handleChange}
+            required
+          >
+            {countries.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.flag} {c.name} ({c.code})
+              </option>
+            ))}
+          </select>
+          <input
+            type="text"
+            name="phoneMiddle"
+            maxLength="4"
+            placeholder="1234"
+            value={formData.phoneMiddle}
+            onChange={handleChange}
+            required
+          />
+          <input
+            type="text"
+            name="phoneLast"
+            maxLength="4"
+            placeholder="5678"
+            value={formData.phoneLast}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-        <label>이메일</label>
         <input
           type="email"
           name="email"
+          placeholder="이메일"
           value={formData.email}
           onChange={handleChange}
           required
         />
-
-        <label>아이디</label>
         <input
           type="text"
           name="user_id"
+          placeholder="아이디"
           value={formData.user_id}
           onChange={handleChange}
           required
         />
-
-        <label>비밀번호</label>
         <input
           type="password"
           name="password"
+          placeholder="비밀번호"
           value={formData.password}
           onChange={handleChange}
           required
@@ -106,6 +162,8 @@ function Profile() {
       </form>
     </div>
   );
-}
+};
 
 export default Profile;
+
+      

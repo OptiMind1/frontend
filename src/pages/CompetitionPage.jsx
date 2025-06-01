@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+// src/pages/CompetitionPage.jsx
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import API from "../api"; // axios 인스턴스
 
 export default function CompetitionPage() {
   const [filter, setFilter] = useState("전체");
@@ -9,17 +11,46 @@ export default function CompetitionPage() {
   const [selectedMainCategory, setSelectedMainCategory] = useState("");
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
 
+  // 백엔드에서 받아온 공모전 배열을 저장할 상태
+  const [competitions, setCompetitions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const navigate = useNavigate();
 
-  const data = [
-    { id: 1, type: "공모전", title: "창의력 공모전 2025", category: "아이디어/창업/네이밍", color: "text-sky-600" },
-    { id: 2, type: "대외활동", title: "글로벌 리더십 캠프", category: "기타", color: "text-sky-700" },
-    { id: 3, type: "공모전", title: "환경 보호 공모전", category: "문학/학술/공학", color: "text-sky-600" },
-    { id: 4, type: "대외활동", title: "청년 스타트업 프로그램", category: "아이디어/창업/네이밍", color: "text-sky-700" },
-    { id: 5, type: "공모전", title: "AI 해커톤 대회", category: "문학/학술/공학", color: "text-sky-600" },
-    { id: 6, type: "대외활동", title: "국제 교환학생 프로그램", category: "문학/학술/공학", color: "text-sky-700" },
-  ];
+  // 1) 페이지가 마운트되면 백엔드 API 호출하여 공모전 목록을 가져온다.
+  useEffect(() => {
+    API.get("/api/competition/")
+      .then((res) => {
+        // res.data가 공모전 배열로 내려온다고 가정
+        setCompetitions(res.data);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error("❌ 공모전 불러오기 실패:", err);
+        setIsLoading(false);
+      });
+  }, []);
 
+  // 2) 필터링: react state(filter, categoryFilter)에 따라 competitions를 걸러낸다.
+  const filteredData = competitions.filter((item) => {
+    // (1) type 필터: item.type 필드는 백엔드 model에 있지 않으므로,
+    //     예시 데이터에 "type" 필드를 추가하거나, 그냥 category/subcategory 로 대체하세요.
+    //    (예: "공모전" vs "대외활동" 식으로 구분된 필드가 없다면 무시해도 됨)
+    const typeMatch = filter === "전체" || item.type === filter;
+
+    // (2) categoryFilter: 실제 모델에서는 item.category, item.subcategory가 있음.
+    //     한국어 명칭이 "category" 필드에 들어가 있으므로, 여기서는 categoryFilter와 매칭해 봄
+    const categoryString = `${item.category}/${item.subcategory}`; 
+    const categoryMatch = 
+      categoryFilter === "전체" ||
+      categoryString.includes(categoryFilter) ||
+      item.category.includes(categoryFilter) ||
+      item.subcategory.includes(categoryFilter);
+
+    return typeMatch && categoryMatch;
+  });
+
+  // (필요하다면) 미리 카테고리 구조를 정의
   const categoryDetails = {
     "아이디어/창업/네이밍": ["창업", "아이디어", "슬로건", "네이밍", "마케팅"],
     "사진/영상": ["사진", "영상"],
@@ -29,16 +60,15 @@ export default function CompetitionPage() {
     "기타": []
   };
 
-  const filteredData = data.filter((item) => {
-    const typeMatch = filter === "전체" || item.type === filter;
-    const categoryMatch = categoryFilter === "전체" || item.category.includes(categoryFilter);
-    return typeMatch && categoryMatch;
-  });
+  if (isLoading) {
+    return <div className="p-6">로딩 중...</div>;
+  }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-sky-700 mb-6">공모전 & 대외활동</h1>
 
+      {/* 상단 필터 바 */}
       <div className="flex gap-4 border-b mb-6">
         {["전체", "공모전", "대외활동"].map((item) => (
           <button
@@ -48,20 +78,24 @@ export default function CompetitionPage() {
               setCategoryFilter("전체");
             }}
             className={`pb-2 px-4 text-lg font-medium ${
-              filter === item ? "border-b-2 border-sky-600 text-sky-600" : "text-gray-500 hover:text-sky-600"
+              filter === item
+                ? "border-b-2 border-sky-600 text-sky-600"
+                : "text-gray-500 hover:text-sky-600"
             }`}
           >
             {item}
           </button>
         ))}
+
         <button
           onClick={() => setShowCategoryModal(true)}
-          className="ml-auto px-4 py-2 text-sm font-semibold border-2 border-sky-600 text-white bg-sky-600 rounded hover:bg-sky-700 transition"
+          className="ml-auto px-4 py-2 text-sm font-semibold border-2 border-sky-600 text-white bg-sky-600 rounded hover:bg-sky-700"
         >
           분야 선택
         </button>
       </div>
 
+      {/* 공모전 목록 (grid) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredData.length > 0 ? (
           filteredData.map((item) => (
@@ -70,97 +104,101 @@ export default function CompetitionPage() {
               onClick={() => navigate(`/competition/${item.id}`)}
               className="bg-white p-5 rounded-xl shadow border border-gray-200 hover:border-sky-500 hover:shadow-lg transition cursor-pointer"
             >
-              <div className="text-xs text-gray-400 mb-1">{item.type}</div>
-              <h3 className={`text-lg font-semibold mb-2 ${item.color}`}>{item.title}</h3>
-              <p className="text-gray-500 text-sm mb-4">{item.category}</p>
+              {/* type 필드가 실제 모델에 없을 경우, category/subcategory 중 하나를 출력하도록 변경 */}
+              <div className="text-xs text-gray-400 mb-1">
+                {item.category} / {item.subcategory}
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-sky-600">{item.title}</h3>
+              <p className="text-gray-500 text-sm mb-4">{item.deadline || "마감일 미정"}</p>
             </div>
           ))
         ) : (
-          <p className="col-span-3 text-center text-gray-500">조건에 맞는 공모전/대외활동이 없습니다.</p>
+          <p className="col-span-3 text-center text-gray-500">
+            조건에 맞는 공모전/대외활동이 없습니다.
+          </p>
         )}
       </div>
 
+      {/* 분야 선택 모달 */}
       <AnimatePresence>
-  {showCategoryModal && (
-    <div
-      className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-      onClick={() => setShowCategoryModal(false)}
-    >
-      <motion.div
-        onClick={(e) => e.stopPropagation()}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.25 }}
-        className="bg-white p-6 rounded-xl w-[400px] max-h-[90vh] overflow-y-auto shadow-xl space-y-4"
-      >
-        <h2 className="text-lg font-bold text-sky-700">분야 선택</h2>
-
-        {/* 큰 분야 버튼들 */}
-        <div className="grid grid-cols-2 gap-2">
-          {Object.keys(categoryDetails).map((main) => (
-            <button
-              key={main}
-              onClick={() => {
-                setSelectedMainCategory(main);
-                setSelectedSubCategory("");
-              }}
-              className={`border px-3 py-2 rounded ${
-                selectedMainCategory === main ? "border-sky-500 bg-sky-50 text-sky-600" : "border-gray-300"
-              }`}
+        {showCategoryModal && (
+          <div
+            className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+            onClick={() => setShowCategoryModal(false)}
+          >
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25 }}
+              className="bg-white p-6 rounded-xl w-[400px] max-h-[90vh] overflow-y-auto shadow-xl space-y-4"
             >
-              {main}
-            </button>
-          ))}
-        </div>
+              <h2 className="text-lg font-bold text-sky-700">분야 선택</h2>
 
-        {/* 세부 분야 선택 */}
-        {selectedMainCategory && categoryDetails[selectedMainCategory].length > 0 && (
-          <div className="pt-4 border-t space-y-2">
-            <h3 className="text-sm font-semibold text-sky-700">세부 분야 선택</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {categoryDetails[selectedMainCategory].map((sub) => (
-                <button
-                  key={sub}
-                  onClick={() => {
-                    setCategoryFilter(sub);
-                    setShowCategoryModal(false);
-                  }}
-                  className="border border-sky-300 text-sky-600 rounded px-3 py-2 hover:bg-sky-50"
-                >
-                  {sub}
-                </button>
-              ))}
-            </div>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.keys(categoryDetails).map((main) => (
+                  <button
+                    key={main}
+                    onClick={() => {
+                      setSelectedMainCategory(main);
+                      setSelectedSubCategory("");
+                    }}
+                    className={`border px-3 py-2 rounded ${
+                      selectedMainCategory === main
+                        ? "border-sky-500 bg-sky-50 text-sky-600"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {main}
+                  </button>
+                ))}
+              </div>
+
+              {selectedMainCategory && categoryDetails[selectedMainCategory].length > 0 && (
+                <div className="pt-4 border-t space-y-2">
+                  <h3 className="text-sm font-semibold text-sky-700">세부 분야 선택</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {categoryDetails[selectedMainCategory].map((sub) => (
+                      <button
+                        key={sub}
+                        onClick={() => {
+                          setCategoryFilter(sub);
+                          setShowCategoryModal(false);
+                        }}
+                        className="border border-sky-300 text-sky-600 rounded px-3 py-2 hover:bg-sky-50"
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedMainCategory && categoryDetails[selectedMainCategory].length === 0 && (
+                <div className="pt-4 border-t">
+                  <button
+                    onClick={() => {
+                      setCategoryFilter(selectedMainCategory);
+                      setShowCategoryModal(false);
+                    }}
+                    className="w-full border border-sky-300 text-sky-600 rounded px-3 py-2 hover:bg-sky-50"
+                  >
+                    {selectedMainCategory} 선택
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="w-full mt-4 border border-gray-300 text-gray-600 py-2 rounded hover:bg-gray-100"
+              >
+                닫기
+              </button>
+            </motion.div>
           </div>
         )}
-
-        {/* 기타 선택 */}
-        {selectedMainCategory && categoryDetails[selectedMainCategory].length === 0 && (
-          <div className="pt-4 border-t">
-            <button
-              onClick={() => {
-                setCategoryFilter(selectedMainCategory);
-                setShowCategoryModal(false);
-              }}
-              className="w-full border border-sky-300 text-sky-600 rounded px-3 py-2 hover:bg-sky-50"
-            >
-              {selectedMainCategory} 선택
-            </button>
-          </div>
-        )}
-
-        <button
-          onClick={() => setShowCategoryModal(false)}
-          className="w-full mt-4 border border-gray-300 text-gray-600 py-2 rounded hover:bg-gray-100"
-        >
-          닫기
-        </button>
-      </motion.div>
-    </div>
-  )}
-</AnimatePresence>
-
+      </AnimatePresence>
     </div>
   );
 }
