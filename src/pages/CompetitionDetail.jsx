@@ -1,10 +1,9 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
 import { useUser } from "../contexts/UserContext";
 import publicApi from "../api_public"; // ← 이거 사용!
-
+import api from "../api"; // ✅ 위치에 따라 경로 다를 수 있음
 
 const roleOptions = [
   "기획", "디자이너", "UX/UI 설계자", "촬영/감독",
@@ -45,26 +44,7 @@ export default function CompetitionDetail() {
         setIsLoading(false);
       });
   }, [id]);
-  //   const mockCompetition = {
-  //     id,
-  //     title: "AI 창업 공모전 2025",
-  //     description: "AI 기술을 활용한 창업 아이디어를 공모합니다.",
-  //     period: "2025.06.01 ~ 2025.07.31",
-  //     benefits: "총 상금 1,000만원 / 창업지원 / 멘토링 제공",
-  //   };
 
-  //   const mockUsers = [
-  //     { id: "user1", username: "홍길동" },
-  //     { id: "user2", username: "김영희" },
-  //     { id: "user3", username: "박철수" },
-  //   ];
-
-  //   setTimeout(() => {
-  //     setCompetition(mockCompetition);
-  //     setUsers(mockUsers);
-  //     setIsLoading(false);
-  //   }, 300);
-  // }, [id]);
 
   const closeModal = () => {
     setShowTeamModal(false);
@@ -76,48 +56,69 @@ export default function CompetitionDetail() {
   };
 
   const handleTeamSubmit = async () => {
+    const token = localStorage.getItem("access_token");
+
     if (!applicantType) return alert("지원 방식을 선택해주세요.");
 
+  try {
     if (applicantType === "개인") {
-      if (!memberRoles[user.id]) return alert("역할을 선택해주세요.");
+      if (!memberRoles[user.user_id]) return alert("역할을 선택해주세요.");
+
       const payload = {
-        competitionId: competition.id,
-        applicantType,
-        members: [{ id: user.id, role: memberRoles[user.id] }],
+        role: memberRoles[user.user_id],
+        in_team: false,
+        desired_partner: "",
       };
-      await axios.post("/api/team-match/apply", payload);
-      alert("✅ 신청 완료!");
-      closeModal();
+
+      try {
+        const res = await api.post("/api/matching/request/", payload);
+        console.log("✅ 서버 응답:", res.data);
+        alert("✅ 신청 완료!");
+      } catch (err) {
+        console.error("❌ 서버 오류:", err.response?.status, err.response?.data);
+        alert("❌ 팀매칭 신청 실패: " + (err.response?.data?.message || err.message));
+      }
     } else {
-      if (selectedTeamMembers.length === 0) return alert("팀원을 선택해주세요.");
-      const incomplete = selectedTeamMembers.some((id) => !memberRoles[id]);
-      if (incomplete) return alert("모든 팀원의 역할을 선택해주세요.");
+        if (selectedTeamMembers.length === 0) return alert("팀원을 선택해주세요.");
+        const incomplete = selectedTeamMembers.some((user_id) => !memberRoles[user_id]);
+        if (incomplete) return alert("모든 팀원의 역할을 선택해주세요.");
 
       const members = selectedTeamMembers.map((id) => ({
-        id,
+        user_id : id,
         role: memberRoles[id],
       }));
 
       const payload = {
-        competitionId: competition.id,
-        applicantType,
         members,
+        in_team: true,
+        desired_partner: "",  // 추후에 팀장 지정 등 확장 가능
       };
 
-      await axios.post("/api/team-match/apply", payload);
+      await api.post("/api/matching/request", payload, {
+        headers: {
+          Authorization: 'Bearer ${token}'
+        }
+      });
+      
       alert("✅ 신청 완료!");
-      closeModal();
-    }
-  };
+    } 
 
-  const renderRoleButtons = (userId) => (
+      closeModal();
+    } catch (err) {
+        console.error("❌ 팀매칭 신청 실패:", err.response?.status, err.response?.data);
+        alert("팀매칭 신청 실패: " + (err.response?.data?.message || err.message));
+      }
+    };
+  
+
+  const renderRoleButtons = (user_id) => (
     <div className="grid grid-cols-2 gap-2">
       {roleOptions.map((role) => (
         <button
           key={role}
-          onClick={() => setMemberRoles({ ...memberRoles, [userId]: role })}
+          onClick={() => setMemberRoles({ ...memberRoles, [user_id]: role })}
           className={`border px-3 py-1 rounded text-sm ${
-            memberRoles[userId] === role ? "border-sky-500 bg-sky-100 text-sky-700 font-semibold" : "border-gray-300"
+            memberRoles[user_id] === role ? "border-sky-500 bg-sky-100 text-sky-700 font-semibold" : "border-gray-300"
           }`}
         >
           {role}
@@ -135,7 +136,7 @@ export default function CompetitionDetail() {
       <h1 className="text-2xl font-bold mb-4">{competition.title}</h1>
       <button
         onClick={() => {
-          if (!user || !user.id) {
+          if (!user) {
             alert("로그인 후 이용해주세요.");
             return;
           }
@@ -174,10 +175,10 @@ export default function CompetitionDetail() {
                 <div>
                   <label className="block text-sm font-semibold mt-2 mb-1">신청자 정보</label>
                   <div className="mb-2 p-2 border rounded bg-gray-50 text-sm text-gray-700">
-                    {user.username} ({user.id})
+                    {user.name} ({user.user_id})
                   </div>
                   <label className="block text-sm font-semibold mt-2 mb-1">역할 선택</label>
-                  {renderRoleButtons(user.id)}
+                  {renderRoleButtons(user.user_id)}
                 </div>
               )}
 
@@ -203,44 +204,44 @@ export default function CompetitionDetail() {
 
                   <div className="border rounded max-h-32 overflow-y-auto p-2 space-y-1">
                     {users
-                      .filter((u) => u.username.includes(search) || u.id.includes(search))
+                      .filter((u) => u.name.includes(search) || u.user_id.includes(search))
                       .map((user) => {
                         const isDisabled = teamSize && selectedTeamMembers.length >= parseInt(teamSize);
-                        const alreadySelected = selectedTeamMembers.includes(user.id);
+                        const alreadySelected = selectedTeamMembers.includes(user.user_id);
 
                         return (
                           <button
-                            key={user.id}
+                            key={user.user_id}
                             onClick={() => {
                               if (isDisabled) return alert("입력한 팀 인원수를 초과할 수 없습니다.");
-                              if (!alreadySelected) setSelectedTeamMembers([...selectedTeamMembers, user.id]);
+                              if (!alreadySelected) setSelectedTeamMembers([...selectedTeamMembers, user.user_id]);
                             }}
                             disabled={isDisabled || alreadySelected}
                             className={`block w-full text-left px-2 py-1 rounded ${
                               isDisabled || alreadySelected ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "hover:bg-sky-100"
                             }`}
                           >
-                            {user.username} ({user.id})
+                            {user.name} ({user.user_id})
                           </button>
                         );
                       })}
                   </div>
 
-                  {selectedTeamMembers.map((id) => (
-                    <div key={id} className="bg-gray-50 border rounded p-2">
+                  {selectedTeamMembers.map((user_id) => (
+                    <div key={user_id} className="bg-gray-50 border rounded p-2">
                       <div className="flex justify-between items-center mb-2">
-                        <span>{id}</span>
+                        <span>{user_id}</span>
                         <button
                           onClick={() => {
-                            setSelectedTeamMembers(selectedTeamMembers.filter((uid) => uid !== id));
+                            setSelectedTeamMembers(selectedTeamMembers.filter((uid) => uid !== user_id));
                             const copy = { ...memberRoles };
-                            delete copy[id];
+                            delete copy[user_id];
                             setMemberRoles(copy);
                           }}
                           className="text-red-500"
                         >×</button>
                       </div>
-                      {renderRoleButtons(id)}
+                      {renderRoleButtons(user_id)}
                     </div>
                   ))}
                 </div>

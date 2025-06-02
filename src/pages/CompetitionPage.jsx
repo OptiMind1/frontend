@@ -22,7 +22,7 @@ export default function CompetitionPage() {
   }, []);
 
   // 카테고리 필터링
-  const filteredData = competitions.filter((item) => {
+    const filteredData = competitions.filter((item) => {
     const typeMatch = filter === "전체" || item.type === filter;
     const categoryMatch = categoryFilter === "전체" || item.category.includes(categoryFilter);
     return typeMatch && categoryMatch;

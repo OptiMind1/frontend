@@ -9,7 +9,7 @@ import { useUser } from "../contexts/UserContext"; // ✅ 추가
 
 
 function Login() {
-  const [id, setId] = useState("");
+  const [user_id, setId] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const { setUser } = useUser(); // ✅ context의 setUser 사용
@@ -18,11 +18,19 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post("/api/users/login/", { user_id : id, password });
+      const res = await api.post("/api/users/login/", { user_id , password });
+      
       const token = res.data.access;
-      // localStorage.setItem("access_token", res.data.access);
+      const refreshToken = res.data.refresh;
+      
+
       localStorage.setItem("access_token", token);
-      localStorage.setItem("refresh_token", res.data.refresh);
+      localStorage.setItem("refresh_token", refreshToken);
+
+      if (!token || !refreshToken) {
+        alert("토큰 발급 실패");
+        return;
+    }  
 
       try {
         // 🔍 프로필 있는지 확인
@@ -30,10 +38,14 @@ function Login() {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        const userData = profileRes.data;
+        // const userData = profileRes.data;
+        const userData = {
+          user_id: profileRes.data.user_id,
+          name: profileRes.data.name,
+        };
 
-        localStorage.setItem("user", JSON.stringify(userData)); // ✅ localStorage 저장
-        setUser(userData); // ✅ context 반영
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
 
         alert("로그인 성공");
         navigate("/mypage");
@@ -57,7 +69,7 @@ function Login() {
         <input
           type="text"
           placeholder="아이디"
-          value={id}
+          value={user_id}
           onChange={(e) => setId(e.target.value)}
           required
         />
