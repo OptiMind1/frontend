@@ -94,7 +94,8 @@ export default function CompetitionDetail() {
             : ["없음"],
           in_team: false,
           desired_partner: "",
-          competition_id: competition.id
+          competition_id: competition.id,
+          competition: competition.id //AI 알고리즘으로 넘기는 용도
         };
 
         try {
@@ -139,12 +140,13 @@ export default function CompetitionDetail() {
           in_team: true,
           desired_partner: "",  // 추후에 팀장 지정 등 확장 가능
           role : ["dummy"], // 어차피 역할은 members에 들어가있음
-          competition_id : competition.id
+          competition_id : competition.id,
+          
+          competition: competition.id //AI 알고리즘으로 넘기는 용도
+
         };
 
-        // await api.post("/api/matching/request/", payload, {
-        //   headers: { Authorization: 'Bearer ${token}'}
-        // });
+  
 
         await api.post("/api/matching/request/", payload, {
             headers: { Authorization: `Bearer ${token}` }  // ✅ 추가

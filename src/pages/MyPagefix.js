@@ -108,9 +108,7 @@ function MyPagefix() {
       });
 
       alert("추가 정보 저장 완료");
-      setTimeout(() => {
-        navigate("/mypage"); //프로필 등록 후 마이페이지로 이동
-      }, 300); //DB에 저장할 시간 잠깐 주기
+      navigate("/mypage");
     } catch (err) {
       alert("저장 실패: " + (err.response?.data?.message || err.message));
     }
