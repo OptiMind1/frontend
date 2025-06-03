@@ -1,8 +1,8 @@
-// api_public.js
+// src/api_public.js
 import axios from "axios";
 
 const publicApi = axios.create({
-  baseURL: "http://127.0.0.1:8000",  // /api 포함 X
+  baseURL: "http://localhost:8000",  // ✅ 이걸로 바꿔주세요
   headers: {
     "Content-Type": "application/json",
   },
