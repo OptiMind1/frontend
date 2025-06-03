@@ -16,14 +16,26 @@ export default function CreatePostPage() {
   // ✅ 페이지 진입 시 로그인 확인
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    console.log("🧪 user from useUser():", user);
-    console.log("🧪 access_token:", token);
+    // console.log("🧪 user from useUser():", user);
+    // console.log("🧪 access_token:", token);
   
-    if (!user || !token) {
+    if (!token) {
+      alert("로그인이 필요한 기능입니다.");
+      navigate("/community");
+      return;
+    }
+
+    if (!user) {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      // setUser(JSON.parse(savedUser)); // 필요시 setUser 가능
+    } else {
       alert("로그인이 필요한 기능입니다.");
       navigate("/community");
     }
-  }, [user, navigate]);
+  }
+}, [user, navigate]);
+  
 
   // 게시판 이름 → 백엔드 category 코드 매핑
   const convertTabToCategory = (tab) => {
@@ -37,8 +49,12 @@ export default function CreatePostPage() {
   };
 
   const handleSubmit = async () => {
-    if (!title || !content) {
+    if (!title.trim() || !content.trim()) {
       alert("제목과 내용을 입력해주세요.");
+      return;
+    }
+    if (title.length > 200) {
+      alert("제목은 200자 이내로 입력해주세요.");
       return;
     }
 
@@ -47,8 +63,7 @@ export default function CreatePostPage() {
         title,
         content,
         category: convertTabToCategory(tab),
-        // tab,
-        // authorId: user.id,
+        
       });
       alert("글 작성이 완료되었습니다!");
       navigate("/community");

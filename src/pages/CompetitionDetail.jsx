@@ -32,6 +32,31 @@ export default function CompetitionDetail() {
   const [selectedTeamMembers, setSelectedTeamMembers] = useState([]);
   const [memberRoles, setMemberRoles] = useState({});
   const [teamSize, setTeamSize] = useState("");
+  const [selectedRoles, setSelectedRoles] = useState([]);
+
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (search.trim() === "") {
+        setUsers([]);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await api.get(`/api/profiles/search_team/?nickname=${search}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUsers(res.data);  // ✅ 다수 반환을 기대
+      } catch (err) {
+        setUsers([]);  // 검색 실패 시 목록 초기화
+      }
+    };
+
+    fetchUsers();
+  }, [search]);
+  
+
 
   useEffect(() => {
     publicApi.get(`/api/competition/${id}/`)
@@ -60,48 +85,73 @@ export default function CompetitionDetail() {
 
     if (!applicantType) return alert("지원 방식을 선택해주세요.");
 
-  try {
-    if (applicantType === "개인") {
-      if (!memberRoles[user.user_id]) return alert("역할을 선택해주세요.");
+    try {
+      if (applicantType === "개인") {
+        
+        const payload = {
+          role: Array.isArray(memberRoles[user.user_id]) && memberRoles[user.user_id].length > 0
+            ? memberRoles[user.user_id]
+            : ["없음"],
+          in_team: false,
+          desired_partner: "",
+          competition_id: competition.id
+        };
 
-      const payload = {
-        role: memberRoles[user.user_id],
-        in_team: false,
-        desired_partner: "",
-      };
-
-      try {
-        const res = await api.post("/api/matching/request/", payload);
-        console.log("✅ 서버 응답:", res.data);
-        alert("✅ 신청 완료!");
-      } catch (err) {
-        console.error("❌ 서버 오류:", err.response?.status, err.response?.data);
-        alert("❌ 팀매칭 신청 실패: " + (err.response?.data?.message || err.message));
-      }
-    } else {
-        if (selectedTeamMembers.length === 0) return alert("팀원을 선택해주세요.");
-        const incomplete = selectedTeamMembers.some((user_id) => !memberRoles[user_id]);
-        if (incomplete) return alert("모든 팀원의 역할을 선택해주세요.");
-
-      const members = selectedTeamMembers.map((id) => ({
-        user_id : id,
-        role: memberRoles[id],
-      }));
-
-      const payload = {
-        members,
-        in_team: true,
-        desired_partner: "",  // 추후에 팀장 지정 등 확장 가능
-      };
-
-      await api.post("/api/matching/request", payload, {
-        headers: {
-          Authorization: 'Bearer ${token}'
+        try {
+          const res = await api.post("/api/matching/request/", payload, {
+            headers: { Authorization: `Bearer ${token}` }  // ✅ 추가
+          });
+          console.log("✅ 서버 응답:", res.data);
+          alert("✅ 신청 완료!");
+        } catch (err) {
+          console.error("❌ 서버 오류:", err.response?.status, err.response?.data);
+          alert("❌ 팀매칭 신청 실패: " + (err.response?.data?.message || err.message));
         }
-      });
-      
-      alert("✅ 신청 완료!");
-    } 
+      } else {
+        if (selectedTeamMembers.length === 0) return alert("팀원을 선택해주세요.");
+        
+        // const filteredTeamMembers = selectedTeamMembers.filter((uid) => uid !== user.user_id);
+
+        const members = [
+          {
+            user_id: user.user_id,
+            role: Array.isArray(memberRoles[user.user_id]) && memberRoles[user.user_id].length > 0
+              ? memberRoles[user.user_id]
+              : ["없음"]
+          },
+          // ...selectedTeamMembers.map((user_id) => ({
+          //   user_id,
+          //   role: Array.isArray(memberRoles[user_id]) && memberRoles[user_id].length > 0
+          //     ? memberRoles[user_id]
+          //     : ["없음"]
+          ...selectedTeamMembers
+            .filter((id) => id !== user.user_id) // 혹시 중복될 경우 대비
+            .map((id) => ({
+              user_id: id,
+              role: Array.isArray(memberRoles[id]) && memberRoles[id].length > 0
+                ? memberRoles[id]
+                : ["없음"]
+          }))
+      ];
+
+        const payload = {
+          members,
+          in_team: true,
+          desired_partner: "",  // 추후에 팀장 지정 등 확장 가능
+          role : ["dummy"], // 어차피 역할은 members에 들어가있음
+          competition_id : competition.id
+        };
+
+        // await api.post("/api/matching/request/", payload, {
+        //   headers: { Authorization: 'Bearer ${token}'}
+        // });
+
+        await api.post("/api/matching/request/", payload, {
+            headers: { Authorization: `Bearer ${token}` }  // ✅ 추가
+          });
+        
+        alert("✅ 신청 완료!");
+      } 
 
       closeModal();
     } catch (err) {
@@ -111,21 +161,36 @@ export default function CompetitionDetail() {
     };
   
 
-  const renderRoleButtons = (user_id) => (
-    <div className="grid grid-cols-2 gap-2">
-      {roleOptions.map((role) => (
-        <button
-          key={role}
-          onClick={() => setMemberRoles({ ...memberRoles, [user_id]: role })}
-          className={`border px-3 py-1 rounded text-sm ${
-            memberRoles[user_id] === role ? "border-sky-500 bg-sky-100 text-sky-700 font-semibold" : "border-gray-300"
-          }`}
-        >
-          {role}
-        </button>
-      ))}
-    </div>
-  );
+  const renderRoleButtons = (user_id) => {
+    const selectedRoles = memberRoles[user_id] || [];
+
+    const toggleRole = (role) => {
+      const updatedRoles = selectedRoles.includes(role)
+        ? selectedRoles.filter((r) => r !== role)
+        : [...selectedRoles, role];
+
+      setMemberRoles({ ...memberRoles, [user_id]: updatedRoles });
+    };
+
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        {roleOptions.map((role) => (
+          <button
+            key={role}
+            type="button"
+            onClick={() => toggleRole(role)}
+            className={`border px-3 py-1 rounded text-sm ${
+              selectedRoles.includes(role)
+                ? "border-sky-500 bg-sky-100 text-sky-700 font-semibold"
+                : "border-gray-300"
+            }`}
+          >
+            {role}
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   if (isLoading) return <div>로딩 중...</div>;
   if (!competition) return <div>공모전 정보를 불러오지 못했습니다.</div>;
@@ -184,6 +249,15 @@ export default function CompetitionDetail() {
 
               {applicantType === "팀" && (
                 <div className="space-y-4">
+                  {/* 로그인한 사용자 역할 선택 */}
+                  <div>
+                    <label className="block text-sm font-semibold mt-2 mb-1">내 역할 선택</label>
+                    <div className="mb-2 p-2 border rounded bg-gray-50 text-sm text-gray-700">
+                      {user.name} ({user.user_id})
+                    </div>
+                    {renderRoleButtons(user.user_id)}
+                  </div>
+
                   <label className="block text-sm font-semibold mb-1">팀 인원수</label>
                   <input
                     type="number"
@@ -198,16 +272,15 @@ export default function CompetitionDetail() {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="아이디 또는 이름 검색"
+                    placeholder="아이디 또는 닉네임 검색"
                     className="w-full border rounded px-2 py-1"
                   />
 
                   <div className="border rounded max-h-32 overflow-y-auto p-2 space-y-1">
-                    {users
-                      .filter((u) => u.name.includes(search) || u.user_id.includes(search))
-                      .map((user) => {
+                    {users.map((user) => {
                         const isDisabled = teamSize && selectedTeamMembers.length >= parseInt(teamSize);
                         const alreadySelected = selectedTeamMembers.includes(user.user_id);
+                      // .filter((u) => u.name.includes(search) || u.user_id.includes(search))
 
                         return (
                           <button

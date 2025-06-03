@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import axios from "axios";
 import "./Profile.css";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
@@ -48,7 +47,7 @@ function Login() {
         localStorage.setItem("user", JSON.stringify(userData));
 
         alert("로그인 성공");
-        navigate("/mypage");
+        navigate('/');
         
       } catch (profileErr) {
         alert("로그인 성공 - 추가 정보가 필요합니다.");
