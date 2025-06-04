@@ -1,4 +1,6 @@
-import { useParams } from "react-router-dom";
+// CompetitionDetail.jsx
+
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -25,15 +27,12 @@ const Button = ({ children, className = "", ...props }) => (
 
 export default function CompetitionDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();       // useNavigate 훅을 추가
   const { user } = useUser();
 
   const [competition, setCompetition] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [detailInfo, setDetailInfo] = useState(null);
-
-  // “실제 화면에 보여 줄 제목”만 담을 상태
-  const [detailTitle, setDetailTitle] = useState("");
-
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [applicantType, setApplicantType] = useState("");
   const [users, setUsers] = useState([]);
@@ -42,7 +41,7 @@ export default function CompetitionDetail() {
   const [memberRoles, setMemberRoles] = useState({});
   const [teamSize, setTeamSize] = useState("");
 
-  // 1) competition 데이터를 불러와서 state에 저장
+  // 1) competition 상세 정보 불러오기
   useEffect(() => {
     publicApi.get(`/api/competition/${id}/`)
       .then((res) => {
@@ -55,13 +54,12 @@ export default function CompetitionDetail() {
       });
   }, [id]);
 
-  // 2) competition.link가 있으면, 상세 크롤링 API 호출
+  // 2) competition.link가 있으면 크롤링해서 detailInfo 업데이트
   useEffect(() => {
     if (!competition || !competition.link) return;
 
     const fetchDetailInfo = async () => {
       try {
-        // URL을 encodeURIComponent로 인코딩
         const encodedUrl = encodeURIComponent(competition.link);
         const res = await publicApi.get(
           `/api/competition/crawl/detail/?url=${encodedUrl}`
@@ -71,28 +69,8 @@ export default function CompetitionDetail() {
         console.error("상세 크롤링 실패", err);
       }
     };
-
     fetchDetailInfo();
   }, [competition]);
-
-  // 3) detailInfo.description(HTML 전체)가 바뀔 때마다 “<b>…</b>” 안의 텍스트만 추출
-  useEffect(() => {
-    if (!detailInfo || !detailInfo.description) return;
-
-    // 임시로 DOM 형태로 만들어서 <b> 태그를 찾아보기
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = detailInfo.description;
-
-    // 올콘 상세 페이지에서 제목은 <b> 태그 안에 들어있습니다.
-    const bTag = tempDiv.querySelector("b");
-    if (bTag && bTag.textContent) {
-      // “조이시티 공식 크리에이터 - 조이크루” 이런 식으로 나옴
-      setDetailTitle(bTag.textContent.trim());
-    } else {
-      // 혹시 없으면, 백엔드에서 가져온 competition.title 을 대체 사용
-      setDetailTitle(competition?.title || "");
-    }
-  }, [detailInfo, competition]);
 
   const closeModal = () => {
     setShowTeamModal(false);
@@ -127,15 +105,15 @@ export default function CompetitionDetail() {
         alert("팀원을 선택해주세요.");
         return;
       }
-      const incomplete = selectedTeamMembers.some((uid) => !memberRoles[uid]);
+      const incomplete = selectedTeamMembers.some((id) => !memberRoles[id]);
       if (incomplete) {
         alert("모든 팀원의 역할을 선택해주세요.");
         return;
       }
 
-      const members = selectedTeamMembers.map((uid) => ({
-        id: uid,
-        role: memberRoles[uid],
+      const members = selectedTeamMembers.map((id) => ({
+        id,
+        role: memberRoles[id],
       }));
 
       const payload = {
@@ -173,12 +151,27 @@ export default function CompetitionDetail() {
 
   return (
     <div className="p-8">
-      {/* 1) 제목 부분: detailTitle(추출된 <b> 태그 내용) 또는 fallback으로 competition.title */}
-      <h1 className="text-2xl font-bold mb-4">
-        {detailTitle || competition.title}
-      </h1>
+      {/* ────────────────────────────────────────────────────────────────────────────
+          뒤로 가기 버튼을 추가했습니다.  
+          navigate(-1)은 브라우저 히스토리에서 한 단계 뒤로 돌아가고,  
+          만약 히스토리가 없으면 /competition(목록)으로 강제 이동합니다.
+      ──────────────────────────────────────────────────────────────────────────── */}
+      <Button
+        onClick={() => {
+          // 히스토리 스택에 이전 페이지가 있으면 뒤로 가고, 없으면 "/competition"으로 이동
+          if (window.history.state && window.history.state.idx > 0) {
+            navigate(-1);
+          } else {
+            navigate("/competition");
+          }
+        }}
+        className="mb-4 bg-gray-200 text-gray-800 hover:bg-gray-300"
+      >
+        ← 뒤로 가기
+      </Button>
 
-      {/* 팀매칭 신청 버튼 */}
+      {/* ──────────────────────────────────────────────────────────────────────────── */}
+      <h1 className="text-2xl font-bold mb-4">{competition.title}</h1>
       <button
         onClick={() => {
           if (!user || !user.id) {
@@ -192,30 +185,35 @@ export default function CompetitionDetail() {
         팀매칭 신청
       </button>
 
-      {/* 2) 포스터 이미지 (이미지 URL이 있으면 노출) */}
-      {detailInfo && detailInfo.image_url && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-2">포스터</h2>
-          <img
-            src={detailInfo.image_url}
-            alt="공모전 포스터"
-            className="max-w-md rounded border"
-          />
-        </div>
-      )}
-
-      {/* 3) 상세 설명(HTML) */}
-      {detailInfo && detailInfo.description && (
+      {detailInfo && (
         <div className="mt-8 space-y-6">
-          <h2 className="text-lg font-semibold mb-2">상세 설명</h2>
-          <div
-            className="prose prose-lg"
-            dangerouslySetInnerHTML={{ __html: detailInfo.description }}
-          />
+          {detailInfo.image_url && (
+            <div>
+              <h2 className="text-lg font-semibold mb-2">포스터</h2>
+              <img
+                src={detailInfo.image_url}
+                alt="공모전 포스터"
+                className="max-w-md rounded border"
+              />
+            </div>
+          )}
+
+          {detailInfo.description && (
+            <div>
+              <h2 className="text-lg font-semibold mb-2">상세 설명</h2>
+              {/* description에 HTML 전체가 들어 있으므로 dangerouslySetInnerHTML 사용 */}
+              <div
+                className="prose prose-lg"
+                dangerouslySetInnerHTML={{ __html: detailInfo.description }}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {/* 4) 팀 매칭 모달(이하 생략) */}
+      {/* ────────────────────────────────────────────────────────────────────────────
+          팀매칭 모달
+      ──────────────────────────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showTeamModal && (
           <div
@@ -231,6 +229,7 @@ export default function CompetitionDetail() {
               className="bg-white p-6 rounded-xl shadow-lg w-[450px] space-y-4 max-h-[90vh] overflow-y-auto"
             >
               <h2 className="text-xl font-bold text-sky-700">팀매칭 신청</h2>
+
               <div>
                 <label className="block text-sm font-semibold mb-1">지원 방식</label>
                 <div className="flex gap-4">
@@ -296,8 +295,7 @@ export default function CompetitionDetail() {
                     {users
                       .filter(
                         (u) =>
-                          u.username.includes(search) ||
-                          String(u.id).includes(search)
+                          u.username.includes(search) || u.id.includes(search)
                       )
                       .map((u) => {
                         const isDisabled =

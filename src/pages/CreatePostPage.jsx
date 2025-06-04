@@ -37,26 +37,29 @@ export default function CreatePostPage() {
   };
 
   const handleSubmit = async () => {
-    if (!title || !content) {
-      alert("제목과 내용을 입력해주세요.");
-      return;
-    }
+  if (!title || !content) {
+    alert("제목과 내용을 입력해주세요.");
+    return;
+  }
 
-    try {
-      await api.post("/api/community/posts/", {
-        title,
-        content,
-        category: convertTabToCategory(tab),
-        // tab,
-        // authorId: user.id,
-      });
-      alert("글 작성이 완료되었습니다!");
-      navigate("/community");
-    } catch (error) {
-      console.error("게시글 작성 오류:", error.response?.data || error.message);
-      alert("글 작성 중 오류가 발생했습니다.");
-    }
+  const data = {
+    title,
+    content,
+    category: convertTabToCategory(tab),
   };
+
+  console.log("🔻 전송 데이터:", data);
+
+  try {
+    const res = await api.post("/api/community/posts/", data);
+    alert("글 작성이 완료되었습니다!");
+    navigate("/community");
+  } catch (error) {
+    console.error("게시글 작성 오류:", error.response?.data || error.message);
+    alert("글 작성 중 오류가 발생했습니다.");
+  }
+};
+
 
   return (
     <div className="p-6 min-h-screen bg-white">
