@@ -10,6 +10,7 @@ const Navbar = () => {
     { path: "/competition", label: "공모전 & 대외활동" },
     { path: "/community", label: "커뮤니티" },
     { path: "/mypage", label: "마이페이지" },
+    { path: "searchuser", label: "유저 검색"}
   ];
 
   return (
@@ -21,8 +22,8 @@ const Navbar = () => {
             to={item.path}
             className={`text-lg font-semibold transition-colors ${
               location.pathname === item.path
-                ? 'text-sky-500' // 현재 페이지일 때 하늘색
-                : 'text-gray-700 hover:text-sky-500' // hover할 때 하늘색
+                ? 'text-blue-900'
+                : 'text-gray-700 hover:text-blue-900'
             }`}
           >
             {item.label}

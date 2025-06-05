@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import publicApi from "../api_public";
 
+const NAVY = "#00274d";
+const NAVY_LIGHT = "#336699";
+const NAVY_HOVER = "#004080";
+const BG_LIGHT = "#f9fbfd";
 
 export default function CompetitionPage() {
   const [filter, setFilter] = useState("전체");
@@ -47,8 +51,8 @@ export default function CompetitionPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-sky-700 mb-6">공모전 & 대외활동</h1>
+    <div style={{ backgroundColor: BG_LIGHT }} className="p-6 min-h-screen">
+      <h1 className="text-3xl font-bold mb-6" style={{ color: NAVY }}>공모전 & 대외활동</h1>
 
       <div className="flex gap-4 border-b mb-6">
         {["전체", "공모전", "대외활동"].map((item) => (
@@ -58,16 +62,27 @@ export default function CompetitionPage() {
               setFilter(item);
               setCategoryFilter("전체");
             }}
-            className={`pb-2 px-4 text-lg font-medium ${
-              filter === item ? "border-b-2 border-sky-600 text-sky-600" : "text-gray-500 hover:text-sky-600"
+            className={`pb-2 px-4 text-lg font-medium transition ${
+              filter === item ? "border-b-2" : "hover:text-[color:#004080] text-gray-500"
             }`}
+            style={{
+              borderColor: filter === item ? NAVY_HOVER : "transparent",
+              color: filter === item ? NAVY_HOVER : undefined,
+            }}
           >
             {item}
           </button>
         ))}
         <button
           onClick={() => setShowCategoryModal(true)}
-          className="ml-auto px-4 py-2 text-sm font-semibold border-2 border-sky-600 text-white bg-sky-600 rounded hover:bg-sky-700 transition"
+          className="ml-auto px-4 py-2 text-sm font-semibold border-2 rounded transition"
+          style={{
+            borderColor: NAVY,
+            backgroundColor: NAVY,
+            color: "white",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = NAVY_HOVER}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = NAVY}
         >
           분야 선택
         </button>
@@ -79,11 +94,12 @@ export default function CompetitionPage() {
             <div
               key={item.id}
               onClick={() => navigate(`/competition/${item.id}`)}
-              className="bg-white p-5 rounded-xl shadow border border-gray-200 hover:border-sky-500 hover:shadow-lg transition cursor-pointer"
+              className="bg-white p-5 rounded-xl shadow border border-gray-200 hover:shadow-lg transition cursor-pointer"
+              style={{ borderColor: "#ccd6e0" }}
             >
               <div className="text-xs text-gray-400 mb-1">{item.type}</div>
-              <h3 className={`text-lg font-semibold mb-2 ${item.color}`}>{item.title}</h3>
-              <p className="text-gray-500 text-sm mb-4">{item.category}</p>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: NAVY_LIGHT }}>{item.title}</h3>
+              <p className="text-gray-600 text-sm mb-4">{item.category}</p>
             </div>
           ))
         ) : (
@@ -105,7 +121,7 @@ export default function CompetitionPage() {
               transition={{ duration: 0.25 }}
               className="bg-white p-6 rounded-xl w-[400px] max-h-[90vh] overflow-y-auto shadow-xl space-y-4"
             >
-              <h2 className="text-lg font-bold text-sky-700">분야 선택</h2>
+              <h2 className="text-lg font-bold" style={{ color: NAVY }}>분야 선택</h2>
 
               {/* 큰 분야 버튼들 */}
               <div className="grid grid-cols-2 gap-2">
@@ -116,9 +132,15 @@ export default function CompetitionPage() {
                       setSelectedMainCategory(main);
                       setSelectedSubCategory("");
                     }}
-                    className={`border px-3 py-2 rounded ${
-                      selectedMainCategory === main ? "border-sky-500 bg-sky-50 text-sky-600" : "border-gray-300"
-                    }`}
+                    className="border px-3 py-2 rounded transition"
+                    style={{
+                      borderColor:
+                        selectedMainCategory === main ? NAVY_HOVER : "#ccc",
+                      backgroundColor:
+                        selectedMainCategory === main ? "#e6f0fa" : "white",
+                      color:
+                        selectedMainCategory === main ? NAVY_HOVER : "black"
+                    }}
                   >
                     {main}
                   </button>
@@ -128,7 +150,7 @@ export default function CompetitionPage() {
               {/* 세부 분야 선택 */}
               {selectedMainCategory && categoryDetails[selectedMainCategory].length > 0 && (
                 <div className="pt-4 border-t space-y-2">
-                  <h3 className="text-sm font-semibold text-sky-700">세부 분야 선택</h3>
+                  <h3 className="text-sm font-semibold" style={{ color: NAVY }}>세부 분야 선택</h3>
                   <div className="grid grid-cols-2 gap-2">
                     {categoryDetails[selectedMainCategory].map((sub) => (
                       <button
@@ -137,7 +159,12 @@ export default function CompetitionPage() {
                           setCategoryFilter(sub);
                           setShowCategoryModal(false);
                         }}
-                        className="border border-sky-300 text-sky-600 rounded px-3 py-2 hover:bg-sky-50"
+                        className="border rounded px-3 py-2 transition"
+                        style={{
+                          borderColor: NAVY_LIGHT,
+                          color: NAVY_HOVER,
+                          backgroundColor: "white"
+                        }}
                       >
                         {sub}
                       </button>
@@ -154,7 +181,12 @@ export default function CompetitionPage() {
                       setCategoryFilter(selectedMainCategory);
                       setShowCategoryModal(false);
                     }}
-                    className="w-full border border-sky-300 text-sky-600 rounded px-3 py-2 hover:bg-sky-50"
+                    className="w-full border rounded px-3 py-2"
+                    style={{
+                      borderColor: NAVY_LIGHT,
+                      color: NAVY_HOVER,
+                      backgroundColor: "white"
+                    }}
                   >
                     {selectedMainCategory} 선택
                   </button>
@@ -163,7 +195,12 @@ export default function CompetitionPage() {
 
               <button
                 onClick={() => setShowCategoryModal(false)}
-                className="w-full mt-4 border border-gray-300 text-gray-600 py-2 rounded hover:bg-gray-100"
+                className="w-full mt-4 border py-2 rounded transition"
+                style={{
+                  borderColor: "#ccc",
+                  color: "#555",
+                  backgroundColor: "#f5f5f5"
+                }}
               >
                 닫기
               </button>

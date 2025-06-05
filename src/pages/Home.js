@@ -47,7 +47,7 @@ const Home = () => {
         <div className="absolute top-4 right-4 z-50">
           <button
             onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+            className="w-32 py-3 border border-[#00274d] bg-[#00274d] text-white rounded-lg text-lg font-medium hover:bg-[#001f3a] transition-colors duration-200"
           >
             로그아웃
           </button>
@@ -65,7 +65,7 @@ const Home = () => {
         <div className="flex flex-col gap-4 items-center">
           <button
             onClick={handleStart}
-            className="w-64 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-lg font-semibold transition"
+            className="w-64 py-3 border border-[#00274d] bg-white text-[#00274d] rounded-lg text-lg font-medium hover:bg-[#00274d] hover:text-white transition-colors duration-200"
           >
             시작하기
           </button>
@@ -75,13 +75,13 @@ const Home = () => {
             <>
               <button
                 onClick={handleLogin}
-                className="w-64 py-3 bg-white hover:bg-gray-100 text-blue-600 rounded-md text-lg font-semibold transition"
+                className="w-64 py-3 border border-[#00274d] bg-white text-[#00274d] rounded-lg text-lg font-medium hover:bg-[#00274d] hover:text-white transition-colors duration-200"
               >
             로그인
           </button>
           <button
             onClick={handleSignup}
-            className="w-32 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md text-lg font-semibold transition"
+            className="w-64 py-3 border border-[#00274d] bg-[#00274d] text-white rounded-lg text-lg font-medium hover:bg-[#001f3a] transition-colors duration-200"
           >
             회원가입
           </button>
