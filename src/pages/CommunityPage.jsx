@@ -37,16 +37,19 @@ export default function CommunityPage() {
   // const filteredPosts = posts.filter(post => post.tab === selectedTab);
 
   return (
-    <div className="flex min-h-screen bg-white text-gray-800">
-      <aside className="w-60 border-r border-gray-200 p-6">
+    <div className="flex min-h-screen bg-white text-blue-900">
+      <aside className="w-60 border-r border-gray-200 p-6 bg-blue-50">
         <h2 className="text-xl font-bold mb-4">카테고리</h2>
-        <ul className="space-y-3">
+        <ul className="space-y-2">
           {tabs.map((tab) => (
             <li key={tab}>
               <button
                 onClick={() => setSelectedTab(tab)}
-                className={`text-left w-full px-2 py-1 rounded hover:bg-gray-100 ${
-                  selectedTab === tab ? "text-sky-600 font-semibold" : "text-gray-700"
+                className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200
+                ${
+                  selectedTab === tab
+                    ? "bg-blue-200 text-blue-900 font-semibold shadow-inner"
+                    : "text-blue-800 hover:bg-blue-100"
                 }`}
               >
                 {tab}
@@ -56,22 +59,22 @@ export default function CommunityPage() {
         </ul>
       </aside>
 
-      <main className="flex-1 p-6 relative">
+      <main className="flex-1 p-6 relative bg-white">
         <h1 className="text-2xl font-bold mb-6">{selectedTab}</h1>
 
         {loading ? (
-          <p className="text-gray-500">로딩 중...</p>
+          <p className="text-blue-700 bg-blue-50 rounded p-4 border border-blue-100 shadow-sm">로딩 중...</p>
         ) : posts.length === 0 ? (
-          <p className="text-gray-500">게시글이 없습니다.</p>
+          <p className="text-blue-700 bg-blue-50 rounded p-4 border border-blue-100 shadow-sm">게시글이 없습니다.</p>
         ) : (
           <ul className="space-y-5">
             {posts.map((post) => (
               <li key={post.id} className="border-b pb-4 overflow-hidden">
                 <Link to={`/post/${post.id}`}>
-                  <h3 className="text-lg font-semibold hover:underline truncate">
+                  <h3 className="text-lg font-semibold text-blue-900 hover:underline truncate">
                     {post.title}
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-blue-700 mt-1">
                     {post.content?.slice(0, 60)}...
                   </p>
                 </Link>
@@ -82,7 +85,7 @@ export default function CommunityPage() {
 
         {/* 글쓰기 원형 버튼 */}
         <Link to="/create">
-          <button className="fixed bottom-10 right-10 bg-sky-500 hover:bg-sky-600 text-white rounded-full w-14 h-14 text-3xl shadow-lg">+</button>
+          <button className="fixed bottom-10 right-10 bg-blue-800 hover:bg-blue-700 text-white rounded-full w-14 h-14 text-3xl shadow-lg transition-all">+</button>
         </Link>
       </main>
     </div>
