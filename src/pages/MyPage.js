@@ -54,6 +54,12 @@ function MyPage() {
       </div>
 
       <ul className="profile-info-list">
+        <li>아이디: {userInfo.username}</li>
+        <li>이름: {userInfo.name}</li>
+        <li>생년월일: {userInfo.birth}</li>
+        <li>전화번호: {userInfo.phone}</li>
+        <li>이메일: {userInfo.email}</li>
+        <li>국적: {userInfo.nationality}</li>
         <li>닉네임: {userInfo.profile.nickname}</li>
         <li>학적/학년: {userInfo.profile.degree_type} / {userInfo.profile.academic_year}</li>
         <li>대학교(캠퍼스): {userInfo.profile.university}</li>
@@ -62,7 +68,6 @@ function MyPage() {
       </ul>
 
       <button onClick={() => navigate("/mypagefix")}>정보 수정</button>
-      <button onClick={() => navigate("/search")}>사용자 검색</button> // 임시로 만든 버튼
 
     </div>
   );
