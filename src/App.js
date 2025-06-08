@@ -13,6 +13,7 @@ import CreatePostPage from "./pages/CreatePostPage";
 import { UserProvider } from "./contexts/UserContext"; // ✅ 추가
 import MyPagefix from "./pages/MyPagefix";
 import SearchUser from "./pages/SearchUser";
+import MypageEdit from "./pages/MypageEdit";
 
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/create" element={<CreatePostPage />} />
           <Route path="/search" element={<SearchUser />} />
+          <Route path="/mypageedit" element={<MypageEdit />} />
         </Routes>
       </Router>
     </UserProvider>

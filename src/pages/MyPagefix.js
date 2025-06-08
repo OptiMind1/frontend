@@ -1,9 +1,7 @@
-import React, { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import "./Profile.css";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
-
 
 function MyPagefix() {
   const [formData, setFormData] = useState({
@@ -16,43 +14,69 @@ function MyPagefix() {
     interests: [],
     profile_image: null,
   });
-
-  const [isNicknameUnique, setIsNicknameUnique] = useState(null); // null: 검사 전, true/false
+  const [preview, setPreview] = useState("");
+  const [originalNickname, setOriginalNickname] = useState("");
+  const [isNicknameUnique, setIsNicknameUnique] = useState(null);
   const [checkingNickname, setCheckingNickname] = useState(false);
+  const [profileId, setProfileId] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await api.get("/api/profiles/me/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const p = res.data.profile;
+        setProfileId(p.id);
+        setFormData({
+          gender: p.gender,
+          university: p.university,
+          degree_type: p.degree_type,
+          academic_year: p.academic_year,
+          nickname: p.nickname,
+          languages: p.languages || [],
+          interests: p.interests || [],
+          profile_image: null,
+        });
+        setOriginalNickname(p.nickname);
+        if (p.profile_image || p.profile_image_url) {
+          setPreview(p.profile_image || p.profile_image_url);
+        }
+      } catch {
+        // 신규 등록 모드
+      }
+    };
+    loadProfile();
+  }, []);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (name === "nickname") {
-      setIsNicknameUnique(null); // 닉네임 바뀌면 상태 초기화
-    }
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "nickname") setIsNicknameUnique(null);
   };
 
   const handleMultiSelectChange = (e, field) => {
-    const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
-    setFormData((prev) => ({ ...prev, [field]: selected }));
+    const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
+    setFormData(prev => ({ ...prev, [field]: selected }));
   };
 
   const handleFileChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      profile_image: e.target.files[0],
-    }));
+    const file = e.target.files[0];
+    setFormData(prev => ({ ...prev, profile_image: file }));
+    setPreview(URL.createObjectURL(file));
   };
 
   const checkNickname = async () => {
-    const nicknameRegex = /^[a-zA-Z0-9가-힣]+$/;
-    if (!nicknameRegex.test(formData.nickname)) {
-      alert("닉네임을 입력해주세요.");
-      return;
+    if (!formData.nickname) return alert("닉네임을 입력해주세요.");
+    if (formData.nickname === originalNickname) {
+      setIsNicknameUnique(true);
+      return alert("현재 닉네임을 사용 중입니다.");
     }
-
     try {
       setCheckingNickname(true);
-      const res = await api.get("/api/profiles/check_nickname/", {
-        params: { nickname: formData.nickname },
-      });
-
+      const res = await api.get("/api/profiles/check_nickname/", { params: { nickname: formData.nickname } });
       if (res.data.is_duplicate) {
         alert("이미 사용 중인 닉네임입니다.");
         setIsNicknameUnique(false);
@@ -60,54 +84,33 @@ function MyPagefix() {
         alert("사용 가능한 닉네임입니다.");
         setIsNicknameUnique(true);
       }
-    } catch (err) {
-      alert("닉네임 확인 실패: " + (err.response?.data?.message || err.message));
-    } finally {
-      setCheckingNickname(false);
-    }
-  };  
-
-  const navigate = useNavigate();
+    } catch {
+      alert("닉네임 확인 실패");
+    } finally { setCheckingNickname(false); }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const nicknameRegex = /^[a-zA-Z0-9가-힣]+$/;
-    if (!nicknameRegex.test(formData.nickname)) {
-      return alert("닉네임에는 공백이나 특수문자를 사용할 수 없습니다.");
-    }
-
-    if (isNicknameUnique !== true) {
+    if (formData.nickname !== originalNickname && isNicknameUnique !== true) {
       return alert("닉네임 중복 확인을 해주세요.");
     }
 
+    const token = localStorage.getItem("access_token");
+    const data = new FormData();
+    ["gender","university","degree_type","academic_year","nickname"].forEach(key => {
+      data.append(key, formData[key]);
+    });
+    data.append("languages", JSON.stringify(formData.languages));
+    data.append("interests", JSON.stringify(formData.interests));
+    if (formData.profile_image) data.append("profile_image", formData.profile_image);
+
     try {
-      // const token = localStorage.getItem("token");
-      const token = localStorage.getItem("access_token");
-
-      const data = new FormData();
-      data.append("gender", formData.gender);
-      data.append("university", formData.university);
-      data.append("academic_year", formData.academic_year);
-      data.append("degree_type", formData.degree_type);
-      data.append("nickname", formData.nickname);
-
-      // ✅ 반드시 배열로 감싸고 JSON.stringify 해줘야 함
-      data.append("languages", JSON.stringify(formData.languages));
-      data.append("interests", JSON.stringify(formData.interests));
-
-      if (formData.profile_image) {
-        data.append("profile_image", formData.profile_image);
-      }
-
-      await api.post("/api/profiles/create/", data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      alert("추가 정보 저장 완료");
+      // 인증 헤더 포함
+      const config = { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } };
+      // update via POST to create endpoint to avoid duplicate errors
+      await api.post("/api/profiles/create/", data, config);
+      alert(profileId ? "정보가 수정되었습니다." : "추가 정보 저장 완료");
       navigate("/mypage");
     } catch (err) {
       alert("저장 실패: " + (err.response?.data?.message || err.message));
@@ -117,50 +120,28 @@ function MyPagefix() {
   return (
     <div className="profile-container">
       <h2 className="profile-title">추가 정보 입력</h2>
-      <form className="profile-form" onSubmit={handleSubmit}>
-        <label htmlFor="university">대학교</label>
-        <input
-          type="text"
-          name="university"
-          placeholder="대학교명 입력"
-          value={formData.university}
-          onChange={handleChange}
-          required
-        />
-
-        <label htmlFor="degree_type">학적 구분</label>
+      <form className="profile-form" onSubmit={handleSubmit} encType="multipart/form-data">
+        <label>대학교</label>
+        <input name="university" value={formData.university} onChange={handleChange} required />
+        <label>학적 구분</label>
         <select name="degree_type" value={formData.degree_type} onChange={handleChange} required>
           <option value="">선택</option>
           <option value="undergraduate">대학생</option>
           <option value="graduate">대학원생</option>
         </select>
+        <label>학년</label>
+        <input name="academic_year" value={formData.academic_year} onChange={handleChange} required />
 
-        <label htmlFor="academic_year">학년</label>
-        <input
-          type="text"
-          name="academic_year"
-          placeholder="학년"
-          value={formData.academic_year}
-          onChange={handleChange}
-          required
-        />
-
-        <label htmlFor="gender">성별</label>
-        <select name="gender" value={formData.gender} onChange={handleChange} required>
+        <label>성별</label>
+        <select name="gender" value={formData.gender} onChange={handleChange} required disabled={!!originalNickname}>
           <option value="">선택</option>
           <option value="male">남성</option>
           <option value="female">여성</option>
           <option value="other">기타</option>
         </select>
 
-        <label htmlFor="languages">사용 언어 (여러 개 선택 시, ctrl을 누르고 선택해주세요.)</label>
-        <select
-          name="languages"
-          multiple
-          value={formData.languages}
-          onChange={(e) => handleMultiSelectChange(e, "languages")}
-          required
-        >
+        <label>사용 언어(여러 개 선택 시, ctrl을 누르고 선택해주세요.)</label>
+        <select multiple name="languages" value={formData.languages} onChange={e => handleMultiSelectChange(e, "languages")}>
           <option value="Korean">Korean</option>
           <option value="English">English</option>
           <option value="Vietnamese">Vietnamese</option>
@@ -177,37 +158,15 @@ function MyPagefix() {
             <li key={idx}>{lang}</li>
           ))}
         </ul>
-        <label htmlFor="nickname">닉네임</label>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <input
-            type="text"
-            name="nickname"
-            placeholder="닉네임"
-            value={formData.nickname}
-            onChange={handleChange}
-            required
-            style={{ flex: 1 }}
-          />
-          <button
-            type="button"
-            onClick={checkNickname}
-            disabled={checkingNickname}
-            style={{ whiteSpace: "nowrap" }}
-          >
-            {checkingNickname ? "확인 중..." : "중복 확인"}
-          </button>
-        </div>
-        {isNicknameUnique === true && <div style={{ color: "green" }}>사용 가능한 닉네임입니다.</div>}
-        {isNicknameUnique === false && <div style={{ color: "red" }}>이미 사용 중인 닉네임입니다.</div>}
 
-        <label htmlFor="interests">관심 분야(ctrl을 누르고 선택해주세요.)</label>
-        <select
-          name="interests"
-          multiple
-          value={formData.interests}
-          onChange={(e) => handleMultiSelectChange(e, "interests")}
-          required
-        >
+        <label>닉네임</label>
+        <div style={{ display: "flex" }}>
+          <input name="nickname" value={formData.nickname} onChange={handleChange} required />
+          <button type="button" onClick={checkNickname} disabled={checkingNickname}>중복 확인</button>
+        </div>
+
+        <label>관심 분야(ctrl을 누르고 선택해주세요.)</label>
+        <select multiple name="interests" value={formData.interests} onChange={e => handleMultiSelectChange(e, "interests")}>
           <option value="창업">창업</option>
           <option value="아이디어">아이디어</option>
           <option value="슬로건">슬로건</option>
@@ -240,8 +199,9 @@ function MyPagefix() {
           ))}
         </ul>
 
-        <label htmlFor="profile_image">프로필 사진</label>
+        <label>프로필 사진</label>
         <input type="file" accept="image/*" onChange={handleFileChange} />
+        {preview && <img src={preview} alt="미리보기" className="profile-image" />}
 
         <button type="submit">저장</button>
       </form>
