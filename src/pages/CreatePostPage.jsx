@@ -74,7 +74,7 @@ export default function CreatePostPage() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-white text-gray-900">
+    <div className="p-6 min-h-screen bg-white">
       <h1 className="text-3xl font-bold mb-8">글 작성</h1>
 
       <div className="flex flex-col gap-6">
@@ -83,10 +83,10 @@ export default function CreatePostPage() {
           <button
             type="button"
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="w-full border border-gray-300 rounded-lg p-3 text-left text-lg flex items-center justify-between shadow bg-blue-800 text-white hover:bg-blue-900"
+            className="w-full border border-gray-300 rounded-lg p-3 text-left text-lg flex items-center justify-between shadow hover:bg-gray-50"
           >
             <span className="flex items-center gap-2">🗂️ {tab}</span>
-            <ChevronDownIcon className="w-5 h-5 text-white" />
+            <ChevronDownIcon className="w-5 h-5 text-gray-500" />
           </button>
 
           {dropdownOpen && (
@@ -98,8 +98,8 @@ export default function CreatePostPage() {
                     setTab(option);
                     setDropdownOpen(false);
                   }}
-                  className={`px-4 py-2 hover:bg-blue-100 cursor-pointer flex items-center gap-2 rounded ${
-                    option === tab ? "text-blue-800 font-semibold" : "text-gray-800"
+                  className={`px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2 ${
+                    option === tab ? "text-sky-600 font-semibold" : ""
                   }`}
                 >
                   🗂️ {option}
@@ -114,7 +114,7 @@ export default function CreatePostPage() {
           placeholder="제목을 입력하세요"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="border border-blue-400 focus:border-blue-800 focus:ring-blue-800 p-3 rounded text-lg transition-colors"
+          className="border p-3 rounded text-lg"
         />
 
         <textarea
@@ -126,7 +126,7 @@ export default function CreatePostPage() {
 
         <button
           onClick={handleSubmit}
-          className="bg-blue-800 hover:bg-blue-900 text-white text-lg py-3 rounded"
+          className="bg-sky-500 hover:bg-sky-600 text-white text-lg py-3 rounded"
         >
           작성 완료
         </button>

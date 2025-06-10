@@ -201,22 +201,6 @@ export default function CompetitionDetail() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-4">{competition.title}</h1>
-      {/* 포스터 이미지 */}
-  {competition.poster_image && (
-    <img
-      src={competition.poster_image}
-      alt="공모전 포스터"
-      className="w-full max-w-md mb-6 rounded shadow"
-    />
-  )}
-
-  {/* 상세 설명 */}
-  {competition.description && (
-    <div className="mb-6 text-gray-700 whitespace-pre-line">
-      {competition.description}
-    </div>
-  )}
-
       <button
         onClick={() => {
           if (!user) {
