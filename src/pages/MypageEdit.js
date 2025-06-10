@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
+import api from "../api";
+
 
 function MyPageEdit() {
   const [formData, setFormData] = useState(null);
@@ -14,7 +15,7 @@ function MyPageEdit() {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("access_token");
-        const res = await axios.get("http://localhost:8000/api/profiles/me/", {
+        const res = await api.get("/api/profiles/me/", {
           headers: { Authorization: `Bearer ${token}` },
         });
         // API returns user + nested profile
@@ -69,7 +70,7 @@ function MyPageEdit() {
     }
     try {
       setCheckingNickname(true);
-      const res = await axios.get("http://localhost:8000/api/profiles/check_nickname/", {
+      const res = await api.get("/api/profiles/check_nickname/", {
         params: { nickname: formData.profile.nickname }
       });
       if (res.data.is_duplicate) {
@@ -110,7 +111,7 @@ function MyPageEdit() {
           interests: formData.profile.interests,
         }
       };
-      await axios.put("http://localhost:8000/api/profiles/me/", payload, {
+      await api.get("/api/profiles/me/", payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert("수정 완료!");
@@ -127,7 +128,7 @@ function MyPageEdit() {
     <div className="profile-container">
       <h2 className="profile-title">내 정보 수정</h2>
       <form onSubmit={handleSubmit} className="profile-form">
-        <label>아이디: {formData.username}</label><br />
+        <label>아이디: {formData.user_id}</label><br />
         <label>성별: {formData.gender}</label><br />
 
         <label>이름:

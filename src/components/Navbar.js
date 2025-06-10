@@ -10,7 +10,8 @@ const Navbar = () => {
     { path: "/competition", label: "공모전 & 대외활동" },
     { path: "/community", label: "커뮤니티" },
     { path: "/mypage", label: "마이페이지" },
-    { path: "/search", label: "유저 검색"}
+    { path: "/search", label: "유저 검색"},
+    { path: "/chatroom", label: "채팅방"}
   ];
 
   return (

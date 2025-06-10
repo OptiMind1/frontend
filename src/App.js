@@ -14,7 +14,7 @@ import { UserProvider } from "./contexts/UserContext"; // ✅ 추가
 import MyPagefix from "./pages/MyPagefix";
 import SearchUser from "./pages/SearchUser";
 import MypageEdit from "./pages/MypageEdit";
-
+import ChatRoom from "./pages/ChatRoom";
 
 function App() {
   return (
@@ -34,6 +34,7 @@ function App() {
           <Route path="/create" element={<CreatePostPage />} />
           <Route path="/search" element={<SearchUser />} />
           <Route path="/mypageedit" element={<MypageEdit />} />
+          <Route path="/chatroom" element={<ChatRoom />} />
         </Routes>
       </Router>
     </UserProvider>

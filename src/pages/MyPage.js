@@ -31,23 +31,20 @@ function MyPage() {
   if (!userInfo) return <div className="profile-container">로딩 중...</div>;
 
   // 백엔드 속성 확인 후 아래 필드명 사용
-  const imgUrl =
-    userInfo.profile.profile_image_url ||
-    userInfo.profile.image ||
-    userInfo.profile.profile_image;
+  const imgUrl = userInfo.profile.profile_image;
 
   return (
     <div className="profile-container">
       <h2 className="profile-title">내 정보</h2>
       <div className="profile-image-wrapper">
         {imgUrl ? (
-          <img src={imgUrl} alt="프로필 이미지" className="profile-image" />
+          <img src={imgUrl} alt="프로필 이미지" className="profile_image" />
         ) : (
           <div className="profile-image-placeholder">이미지 없음</div>
         )}
       </div>
       <ul className="profile-info-list">
-        <li>아이디: {userInfo.username}</li>
+        <li>아이디: {userInfo.user_id}</li>
         <li>이름: {userInfo.name}</li>
         <li>생년월일: {userInfo.birth}</li>
         <li>전화번호: {userInfo.phone}</li>
