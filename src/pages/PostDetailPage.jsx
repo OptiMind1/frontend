@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useUser } from "../contexts/UserContext";
+import { UserContext } from "../contexts/UserContext";
 import api from "../api";            // 인증 포함된 axios 인스턴스
 import publicApi from "../api_public"; // 인증 없이 조회만 할 때 사용
+import { Link } from "react-router-dom"
 
 export default function PostDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user } = useContext(UserContext);
 
   const [post, setPost] = useState(null);
   const [comment, setComment] = useState("");
@@ -145,17 +146,23 @@ export default function PostDetailPage() {
     <div className="flex min-h-screen bg-white">
       <aside className="w-60 border-r border-gray-200 p-6 hidden md:block">
         <h2 className="text-xl font-bold mb-4">카테고리</h2>
-        <ul className="space-y-3 text-gray-700">
-          {["자유게시판", "홍보게시판", "후기모음", "질문게시판"].map((cat) => (
-            <li key={cat}>
-              {cat === post.category ? (
-                <span className="text-sky-600 font-semibold">{cat}</span>
-              ) : (
-                <span>{cat}</span>
-              )}
-            </li>
-          ))}
-        </ul>
+ 
+<ul className="space-y-3 text-gray-700">
+  {["자유게시판", "홍보게시판", "후기모음", "질문게시판"].map((cat) => (
+    <li key={cat}>
+      {cat === post.category ? (
+        <span className="text-sky-600 font-semibold">{cat}</span>
+      ) : (
+        <Link
+          to={`/community?category=${cat}`}
+          className="hover:text-sky-600 transition"
+        >
+          {cat}
+        </Link>
+      )}
+    </li>
+  ))}
+</ul>
       </aside>
 
       <main className="flex-1 p-6 max-w-3xl mx-auto">

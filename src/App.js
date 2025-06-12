@@ -10,35 +10,31 @@ import CompetitionPage from "./pages/CompetitionPage";
 import CommunityPage from "./pages/CommunityPage";
 import CompetitionDetail from "./pages/CompetitionDetail";
 import CreatePostPage from "./pages/CreatePostPage";
-import { UserProvider } from "./contexts/UserContext"; // ✅ 추가
+import PostDetailPage from "./pages/PostDetailPage"; 
+
+import { UserProvider } from "./contexts/UserContext";
+
 import MyPagefix from "./pages/MyPagefix";
 import SearchUser from "./pages/SearchUser";
-import MypageEdit from "./pages/MypageEdit";
-import ChatRoom from "./pages/ChatRoom";
-import PostDetailPage from "./pages/PostDetailPage";  // ✅ 요렇게 고쳐!
-
 function App() {
   return (
-    <UserProvider> {/* ✅ 전체 앱을 감쌈 */}
+      <UserProvider>
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/mypage" element={<MyPage />} />
-          <Route path="/mypagefix" element={<MyPagefix />} />  
+          <Route path="/mypagefix" element={<MyPagefix />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/intro" element={<Intro />} />
           <Route path="/competition" element={<CompetitionPage />} />
           <Route path="/competition/:id" element={<CompetitionDetail />} />
           <Route path="/community" element={<CommunityPage />} />
-          <Route path="/post/:id" element={<PostDetailPage />} />
-
           <Route path="/create" element={<CreatePostPage />} />
           <Route path="/search" element={<SearchUser />} />
-          <Route path="/mypageedit" element={<MypageEdit />} />
-          <Route path="/chatroom" element={<ChatRoom />} />
+          <Route path="/post/:id" element={<PostDetailPage />} />
         </Routes>
-    </UserProvider>
+      </UserProvider>
   );
 }
 
