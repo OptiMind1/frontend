@@ -1,0 +1,154 @@
+.profile-container {
+  max-width: 500px;
+  margin: 50px auto;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+  font-family: 'Noto Sans KR', sans-serif;
+  color: #00274d;
+}
+
+.profile-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+}
+ 
+.profile-form label {
+  margin-top: 1rem;
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+}
+
+.profile-form input,
+.profile-form select {
+  padding: 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.profile-form button {
+  margin-top: 2rem;
+  padding: 0.9rem;
+  background-color: #00274d;
+  color: white;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.profile-form button:hover {
+  background-color: #001f3f;
+}
+
+.phone-input-group {
+  display: flex;
+  gap: 5px;
+  margin-top: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.phone-input-group select {
+  flex: 0 0 38%;
+  min-width: 100px;
+  max-width: 160px;
+  box-sizing: border-box;
+}
+
+.phone-input-group input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.univ-search-wrapper {
+  position: relative;
+}
+
+.univ-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  background: white;
+  z-index: 10;
+  border-radius: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.univ-dropdown li {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.univ-dropdown li:hover {
+  background-color: #f0f0f0;
+}
+
+/* 복수 선택 시 보여줄 리스트 스타일 */
+.selected-list {
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  padding-left: 1.2rem;
+  color: #003366;
+  font-size: 0.95rem;
+}
+
+.selected-list li {
+  list-style-type: disc;
+  margin-bottom: 4px;
+}
+
+.profile-card {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 12px;
+  background-color: #f9f9f9;
+  margin-top: 1rem;
+}
+
+
+.nickname-check-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.nickname-check-group input {
+  flex: 1;
+}
+
+.nickname-check-group button {
+  white-space: nowrap;
+  padding: 8px 12px;
+  background-color: #004080;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.nickname-check-group button:hover {
+  background-color: #003366;
+}
+
+
+  
+  
