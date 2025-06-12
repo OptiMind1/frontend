@@ -5,32 +5,47 @@ import api from "../api";
 
 function MyPage() {
   const [userInfo, setUserInfo] = useState(null);
+  const [myTeams, setMyTeams] = useState([]);
+  const [showTeams, setShowTeams] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("access_token");
         const res = await api.get("/api/profiles/me/", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log("프로필 응답:", res.data.profile);
         setUserInfo(res.data);
       } catch (err) {
-        const status = err.response?.status;
-        if (status === 400) {
+        if (err.response?.status === 400) {
           navigate("/mypagefix");
-        } else {  
+        } else {
           alert("회원 정보 불러오기 실패");
         }
       }
     };
-    fetchData();
+
+    fetchProfile();
   }, [navigate]);
+
+  const fetchMyTeams = async () => {
+  try {
+    const token = localStorage.getItem("access_token");
+    const res = await api.get("/api/team/my_teams/", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log("team response:", res.data); // ← 여기 추가
+    setMyTeams(res.data);
+    setShowTeams(true);
+  } catch (err) {
+    alert("팀 목록 불러오기 실패");
+  }
+};
+
 
   if (!userInfo) return <div className="profile-container">로딩 중...</div>;
 
-  // 백엔드 속성 확인 후 아래 필드명 사용
   const imgUrl = userInfo.profile.profile_image;
 
   return (
@@ -57,6 +72,28 @@ function MyPage() {
         <li>관심 분야: {userInfo.profile.interests?.join(", ")}</li>
       </ul>
       <button onClick={() => navigate("/mypageedit")}>정보 수정</button>
+
+      <hr />
+      <button onClick={fetchMyTeams}>내 팀 목록 보기</button>
+      {showTeams && (
+        <div className="team-list">
+          <h3>내 팀 목록</h3>
+          {myTeams.length === 0 ? (
+            <p>참여 중인 팀이 없습니다.</p>
+          ) : (
+            <ul>
+              {myTeams.map((team) => (
+                <li key={team.id}>
+                  <span>팀 ID: {team.id}</span>{" "}
+                  <button onClick={() => navigate(`/chat/room/${team.chatroom}`)}>
+                    채팅방 입장
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

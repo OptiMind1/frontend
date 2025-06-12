@@ -10,15 +10,14 @@ import CompetitionPage from "./pages/CompetitionPage";
 import CommunityPage from "./pages/CommunityPage";
 import CompetitionDetail from "./pages/CompetitionDetail";
 import CreatePostPage from "./pages/CreatePostPage";
-import PostDetailPage from "./pages/PostDetailPage"; 
-
 import { UserProvider } from "./contexts/UserContext";
-
 import MyPagefix from "./pages/MyPagefix";
 import SearchUser from "./pages/SearchUser";
+import ChatRoom from "./pages/ChatRoom"; // 
+
 function App() {
   return (
-      <UserProvider>
+    <UserProvider>
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
@@ -32,9 +31,9 @@ function App() {
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/create" element={<CreatePostPage />} />
           <Route path="/search" element={<SearchUser />} />
-          <Route path="/post/:id" element={<PostDetailPage />} />
+          <Route path="/chatroom" element={<ChatRoom />} /> 
         </Routes>
-      </UserProvider>
+    </UserProvider>
   );
 }
 
