@@ -306,11 +306,11 @@ export default function CompetitionDetail() {
 
       {detailInfo && (
         <div className="mt-8 space-y-6">
-          {detailInfo.image_url && (
+          {(detailInfo.image_url || competition.image_url) && (
             <div>
               <h2 className="text-lg font-semibold mb-2">포스터</h2>
               <img
-                src={detailInfo.image_url}
+                src={detailInfo.image_url || competition.image_url}
                 alt="공모전 포스터"
                 className="max-w-md rounded border"
               />
@@ -320,7 +320,6 @@ export default function CompetitionDetail() {
           {detailInfo.description && (
             <div>
               <h2 className="text-lg font-semibold mb-2">상세 설명</h2>
-              {/* description에 HTML 전체가 들어 있으므로 dangerouslySetInnerHTML 사용 */}
               <div
                 className="prose prose-lg"
                 dangerouslySetInnerHTML={{ __html: detailInfo.description }}
@@ -329,6 +328,7 @@ export default function CompetitionDetail() {
           )}
         </div>
       )}
+
 
       {/* ────────────────────────────────────────────────────────────────────────────
           팀매칭 모달
