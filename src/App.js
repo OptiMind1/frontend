@@ -1,3 +1,4 @@
+//App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
@@ -12,10 +13,12 @@ import CompetitionDetail from "./pages/CompetitionDetail";
 import CreatePostPage from "./pages/CreatePostPage";
 import PostDetailPage from "./pages/PostDetailPage"; 
 
+
 import { UserProvider } from "./contexts/UserContext";
 
 import MyPagefix from "./pages/MyPagefix";
 import SearchUser from "./pages/SearchUser";
+import ChatRoom from './pages/ChatRoom';
 function App() {
   return (
       <UserProvider>
@@ -33,6 +36,7 @@ function App() {
           <Route path="/create" element={<CreatePostPage />} />
           <Route path="/search" element={<SearchUser />} />
           <Route path="/post/:id" element={<PostDetailPage />} />
+          <Route path="/chatroom" element={<ChatRoom />} />
         </Routes>
       </UserProvider>
   );

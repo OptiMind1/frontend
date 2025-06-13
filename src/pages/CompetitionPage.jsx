@@ -94,9 +94,10 @@ export default function CompetitionPage() {
               className="bg-white p-5 rounded-xl shadow border border-gray-200 hover:border-sky-500 hover:shadow-lg transition cursor-pointer"
             >
               {/* ===== 여기에 poster_image 추가 ===== */}
-              {item.poster_image ? (
+              {item.image_url ? (
                 <img
-                  src={`http://127.0.0.1:8000${item.poster_image}`}
+                  // src={`http://127.0.0.1:8000${item.image_url}`}
+                  src={item.image_url}
                   alt={item.title}
                   className="w-full h-40 object-cover rounded mb-3"
                 />

@@ -3,11 +3,10 @@ import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 import api from "../api";
 
-
 function MyPageEdit() {
   const [formData, setFormData] = useState(null);
   const [originalNickname, setOriginalNickname] = useState("");
-  const [isNicknameUnique, setIsNicknameUnique] = useState(true);
+  const [isNicknameUnique, setIsNicknameUnique] = useState(null);
   const [checkingNickname, setCheckingNickname] = useState(false);
   const navigate = useNavigate();
 
@@ -18,7 +17,6 @@ function MyPageEdit() {
         const res = await api.get("/api/profiles/me/", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        // API returns user + nested profile
         const data = res.data;
         setFormData({
           username: data.username,
@@ -38,6 +36,7 @@ function MyPageEdit() {
           },
         });
         setOriginalNickname(data.profile.nickname);
+        setIsNicknameUnique(true);
       } catch (err) {
         alert("정보 불러오기 실패");
         console.error(err);
@@ -55,7 +54,7 @@ function MyPageEdit() {
         profile: { ...prev.profile, [key]: value }
       }));
       if (key === "nickname") {
-        setIsNicknameUnique(value === originalNickname);
+        setIsNicknameUnique(null);
       }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -90,18 +89,12 @@ function MyPageEdit() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!isNicknameUnique) {
+    if (isNicknameUnique === false || isNicknameUnique === null) {
       return alert("닉네임 중복 확인을 해주세요.");
     }
     try {
       const token = localStorage.getItem("access_token");
-      // Prepare payload matching API
       const payload = {
-        name: formData.name,
-        birth: formData.birth,
-        phone: formData.phone,
-        email: formData.email,
-        nationality: formData.nationality,
         profile: {
           nickname: formData.profile.nickname,
           degree_type: formData.profile.degree_type,
@@ -111,7 +104,7 @@ function MyPageEdit() {
           interests: formData.profile.interests,
         }
       };
-      await api.get("/api/profiles/me/", payload, {
+      await api.patch("/api/profiles/me/", payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert("수정 완료!");
@@ -128,27 +121,27 @@ function MyPageEdit() {
     <div className="profile-container">
       <h2 className="profile-title">내 정보 수정</h2>
       <form onSubmit={handleSubmit} className="profile-form">
-        <label>아이디: {formData.user_id}</label><br />
+        <label>아이디: {formData.username}</label><br />
         <label>성별: {formData.gender}</label><br />
 
         <label>이름:
-          <input type="text" name="name" value={formData.name} onChange={handleChange} required />
+          <input type="text" name="name" value={formData.name} readOnly />
         </label><br />
 
         <label>생년월일:
-          <input type="date" name="birth" value={formData.birth} onChange={handleChange} required />
+          <input type="date" name="birth" value={formData.birth} readOnly />
         </label><br />
 
         <label>전화번호:
-          <input type="text" name="phone" value={formData.phone} onChange={handleChange} required />
+          <input type="text" name="phone" value={formData.phone} readOnly />
         </label><br />
 
         <label>이메일:
-          <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+          <input type="email" name="email" value={formData.email} readOnly />
         </label><br />
 
         <label>국적:
-          <input type="text" name="nationality" value={formData.nationality} onChange={handleChange} required />
+          <input type="text" name="nationality" value={formData.nationality} readOnly />
         </label><br />
 
         <label>닉네임:
@@ -157,7 +150,10 @@ function MyPageEdit() {
             {checkingNickname ? "확인 중..." : "중복 확인"}
           </button>
         </label>
-        {!isNicknameUnique && <div style={{ color: 'red' }}>닉네임 중복입니다.</div>}
+        {isNicknameUnique === false && <div style={{ color: 'red' }}>닉네임 중복입니다.</div>}
+        {isNicknameUnique === true && formData.profile.nickname !== originalNickname && (
+          <div style={{ color: 'green' }}>사용 가능한 닉네임입니다.</div>
+        )}
         <br />
 
         <label>학적 구분:

@@ -1,20 +1,88 @@
 .profile-container {
-  max-width: 500px;
-  margin: 50px auto;
-  padding: 2rem;
+  max-width: 600px;
+  margin: 60px auto;
+  padding: 2.5rem;
   background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 39, 77, 0.1);
   font-family: 'Noto Sans KR', sans-serif;
   color: #00274d;
+  transition: all 0.3s ease-in-out;
 }
 
 .profile-title {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 2rem;
+  font-size: 2.2rem;
+  font-weight: 700;
   text-align: center;
+  margin-bottom: 2.5rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 1rem;
 }
+
+.profile-image-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.profile-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(0, 39, 77, 0.1);
+}
+
+.profile-image-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: #e6e6e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.profile-info-list {
+  list-style: none;
+  padding: 1.2rem 1.5rem;
+  margin: 0 0 2rem 0;
+  line-height: 2;
+  font-size: 1.05rem;
+  background-color: #f5f9fc;
+  border-radius: 12px;
+  box-shadow: inset 0 0 5px rgba(0, 39, 77, 0.05);
+}
+
+.profile-info-list li {
+  margin-bottom: 0.5rem;
+}
+
+.profile-container button {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.9rem;
+  background-color: #00274d;
+  color: white;
+  font-size: 1.05rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.profile-container button:hover {
+  background-color: #001f3f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 39, 77, 0.2);
+}
+
+/* --------- 추가 요소들 --------- */
 
 .profile-form {
   display: flex;
@@ -101,7 +169,6 @@
   background-color: #f0f0f0;
 }
 
-/* 복수 선택 시 보여줄 리스트 스타일 */
 .selected-list {
   margin-top: 0.5rem;
   margin-bottom: 1rem;
@@ -122,7 +189,6 @@
   background-color: #f9f9f9;
   margin-top: 1rem;
 }
-
 
 .nickname-check-group {
   display: flex;
@@ -148,7 +214,3 @@
 .nickname-check-group button:hover {
   background-color: #003366;
 }
-
-
-  
-  

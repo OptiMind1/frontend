@@ -3,9 +3,11 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
 import { useUser } from "../contexts/UserContext";
 import publicApi from "../api_public";
+import api from "../api"; 
+
+
 
 const roleOptions = [
   "기획", "디자이너", "UX/UI 설계자", "촬영/감독",
@@ -72,6 +74,28 @@ export default function CompetitionDetail() {
     fetchDetailInfo();
   }, [competition]);
 
+  //같이 할 팀원 검색
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (search.trim() === "") {
+        setUsers([]);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await api.get(`/api/profiles/search_team/?nickname=${search}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUsers(res.data);  // ✅ 다수 반환을 기대
+      } catch (err) {
+        setUsers([]);  // 검색 실패 시 목록 초기화
+      }
+    };
+
+    fetchUsers();
+  }, [search]);
+
   const closeModal = () => {
     setShowTeamModal(false);
     setApplicantType("");
@@ -82,69 +106,164 @@ export default function CompetitionDetail() {
   };
 
   const handleTeamSubmit = async () => {
-    if (!applicantType) {
-      alert("지원 방식을 선택해주세요.");
-      return;
-    }
+    const token = localStorage.getItem("access_token");
 
-    if (applicantType === "개인") {
-      if (!memberRoles[user.id]) {
-        alert("역할을 선택해주세요.");
-        return;
-      }
-      const payload = {
-        competitionId: competition.id,
-        applicantType,
-        members: [{ id: user.id, role: memberRoles[user.id] }],
-      };
-      await axios.post("/api/team-match/apply", payload);
-      alert("✅ 신청 완료!");
+    if (!applicantType) return alert("지원 방식을 선택해주세요.");
+
+    try {
+      if (applicantType === "개인") {
+        
+        const payload = {
+          role: Array.isArray(memberRoles[user.user_id]) && memberRoles[user.user_id].length > 0
+            ? memberRoles[user.user_id]
+            : ["없음"],
+          in_team: false,
+          desired_partner: "",
+          competition_id: competition.id,
+          competition: competition.id //AI 알고리즘으로 넘기는 용도
+        };
+
+        try {
+          const res = await api.post("/api/matching/request/", payload, {
+            headers: { Authorization: `Bearer ${token}` }  // ✅ 추가
+          });
+          console.log("✅ 서버 응답:", res.data);
+          alert("✅ 신청 완료!");
+        } catch (err) {
+          console.error("❌ 서버 오류:", err.response?.status, err.response?.data);
+          alert("❌ 팀매칭 신청 실패: " + (err.response?.data?.message || err.message));
+        }
+      } else {
+        if (selectedTeamMembers.length === 0) return alert("팀원을 선택해주세요.");
+        
+        // const filteredTeamMembers = selectedTeamMembers.filter((uid) => uid !== user.user_id);
+
+        const members = [
+          {
+            user_id: user.user_id,
+            role: Array.isArray(memberRoles[user.user_id]) && memberRoles[user.user_id].length > 0
+              ? memberRoles[user.user_id]
+              : ["없음"]
+          },
+          // ...selectedTeamMembers.map((user_id) => ({
+          //   user_id,
+          //   role: Array.isArray(memberRoles[user_id]) && memberRoles[user_id].length > 0
+          //     ? memberRoles[user_id]
+          //     : ["없음"]
+          ...selectedTeamMembers
+            .filter((id) => id !== user.user_id) // 혹시 중복될 경우 대비
+            .map((id) => ({
+              user_id: id,
+              role: Array.isArray(memberRoles[id]) && memberRoles[id].length > 0
+                ? memberRoles[id]
+                : ["없음"]
+          }))
+      ];
+
+        const payload = {
+          members,
+          in_team: true,
+          desired_partner: "",  // 추후에 팀장 지정 등 확장 가능
+          role : ["dummy"], // 어차피 역할은 members에 들어가있음
+          competition_id : competition.id,
+          
+          competition: competition.id //AI 알고리즘으로 넘기는 용도
+
+        };
+
+        await api.post("/api/matching/request/", payload, {
+            headers: { Authorization: `Bearer ${token}` }  // ✅ 추가
+          });
+        
+        alert("✅ 신청 완료!");
+      } 
+
       closeModal();
-    } else {
-      if (selectedTeamMembers.length === 0) {
-        alert("팀원을 선택해주세요.");
-        return;
+    } catch (err) {
+        console.error("❌ 팀매칭 신청 실패:", err.response?.status, err.response?.data);
+        alert("팀매칭 신청 실패: " + (err.response?.data?.message || err.message));
       }
-      const incomplete = selectedTeamMembers.some((id) => !memberRoles[id]);
-      if (incomplete) {
-        alert("모든 팀원의 역할을 선택해주세요.");
-        return;
-      }
+    };
 
-      const members = selectedTeamMembers.map((id) => ({
-        id,
-        role: memberRoles[id],
-      }));
+  // const handleTeamSubmit = async () => {
+  //   const token = localStorage.getItem("access_token");
 
-      const payload = {
-        competitionId: competition.id,
-        applicantType,
-        members,
-      };
+  //   if (!applicantType) {
+  //     alert("지원 방식을 선택해주세요.");
+  //     return;
+  //   }
 
-      await axios.post("/api/team-match/apply", payload);
-      alert("✅ 신청 완료!");
-      closeModal();
-    }
+  //   if (applicantType === "개인") {
+  //     if (!memberRoles[user.id]) {
+  //       alert("역할을 선택해주세요.");
+  //       return;
+  //     }
+  //     const payload = {
+  //       competitionId: competition.id,
+  //       applicantType,
+  //       members: [{ id: user.id, role: memberRoles[user.id] }],
+  //     };
+  //     await api.post("/api/matching/request/", payload);
+  //     alert("✅ 신청 완료!");
+  //     closeModal();
+  //   } else {
+  //     if (selectedTeamMembers.length === 0) {
+  //       alert("팀원을 선택해주세요.");
+  //       return;
+  //     }
+  //     const incomplete = selectedTeamMembers.some((id) => !memberRoles[id]);
+  //     if (incomplete) {
+  //       alert("모든 팀원의 역할을 선택해주세요.");
+  //       return;
+  //     }
+
+  //     const members = selectedTeamMembers.map((id) => ({
+  //       id,
+  //       role: memberRoles[id],
+  //     }));
+
+  //     const payload = {
+  //       competitionId: competition.id,
+  //       applicantType,
+  //       members,
+  //     };
+
+  //     await api.post("/api/matching/request/", payload);
+  //     alert("✅ 신청 완료!");
+  //     closeModal();
+  //   }
+  // };
+
+  const renderRoleButtons = (user_id) => {
+    const selectedRoles = memberRoles[user_id] || [];
+
+    const toggleRole = (role) => {
+      const updatedRoles = selectedRoles.includes(role)
+        ? selectedRoles.filter((r) => r !== role)
+        : [...selectedRoles, role];
+
+      setMemberRoles({ ...memberRoles, [user_id]: updatedRoles });
+    };
+
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        {roleOptions.map((role) => (
+          <button
+            key={role}
+            type="button"
+            onClick={() => toggleRole(role)}
+            className={`border px-3 py-1 rounded text-sm ${
+              selectedRoles.includes(role)
+                ? "border-sky-500 bg-sky-100 text-sky-700 font-semibold"
+                : "border-gray-300"
+            }`}
+          >
+            {role}
+          </button>
+        ))}
+      </div>
+    );
   };
-
-  const renderRoleButtons = (userId) => (
-    <div className="grid grid-cols-2 gap-2">
-      {roleOptions.map((role) => (
-        <button
-          key={role}
-          onClick={() => setMemberRoles({ ...memberRoles, [userId]: role })}
-          className={`border px-3 py-1 rounded text-sm ${
-            memberRoles[userId] === role
-              ? "border-sky-500 bg-sky-100 text-sky-700 font-semibold"
-              : "border-gray-300"
-          }`}
-        >
-          {role}
-        </button>
-      ))}
-    </div>
-  );
 
   if (isLoading) return <div>로딩 중...</div>;
   if (!competition) return <div>공모전 정보를 불러오지 못했습니다.</div>;
@@ -174,7 +293,7 @@ export default function CompetitionDetail() {
       <h1 className="text-2xl font-bold mb-4">{competition.title}</h1>
       <button
         onClick={() => {
-          if (!user || !user.id) {
+          if (!user) {
             alert("로그인 후 이용해주세요.");
             return;
           }
@@ -187,11 +306,11 @@ export default function CompetitionDetail() {
 
       {detailInfo && (
         <div className="mt-8 space-y-6">
-          {detailInfo.image_url && (
+          {(detailInfo.image_url || competition.image_url) && (
             <div>
               <h2 className="text-lg font-semibold mb-2">포스터</h2>
               <img
-                src={detailInfo.image_url}
+                src={detailInfo.image_url || competition.image_url}
                 alt="공모전 포스터"
                 className="max-w-md rounded border"
               />
@@ -201,7 +320,6 @@ export default function CompetitionDetail() {
           {detailInfo.description && (
             <div>
               <h2 className="text-lg font-semibold mb-2">상세 설명</h2>
-              {/* description에 HTML 전체가 들어 있으므로 dangerouslySetInnerHTML 사용 */}
               <div
                 className="prose prose-lg"
                 dangerouslySetInnerHTML={{ __html: detailInfo.description }}
@@ -211,15 +329,13 @@ export default function CompetitionDetail() {
         </div>
       )}
 
+
       {/* ────────────────────────────────────────────────────────────────────────────
           팀매칭 모달
       ──────────────────────────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showTeamModal && (
-          <div
-            className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-            onClick={closeModal}
-          >
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={closeModal}>
             <motion.div
               onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -229,50 +345,40 @@ export default function CompetitionDetail() {
               className="bg-white p-6 rounded-xl shadow-lg w-[450px] space-y-4 max-h-[90vh] overflow-y-auto"
             >
               <h2 className="text-xl font-bold text-sky-700">팀매칭 신청</h2>
-
               <div>
                 <label className="block text-sm font-semibold mb-1">지원 방식</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="applicantType"
-                      value="개인"
-                      checked={applicantType === "개인"}
-                      onChange={(e) => setApplicantType(e.target.value)}
-                    />
-                    개인
+                    <input type="radio" name="applicantType" value="개인" checked={applicantType === "개인"} onChange={(e) => setApplicantType(e.target.value)} /> 개인
                   </label>
                   <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="applicantType"
-                      value="팀"
-                      checked={applicantType === "팀"}
-                      onChange={(e) => setApplicantType(e.target.value)}
-                    />
-                    팀
+                    <input type="radio" name="applicantType" value="팀" checked={applicantType === "팀"} onChange={(e) => setApplicantType(e.target.value)} /> 팀
                   </label>
                 </div>
               </div>
 
               {applicantType === "개인" && (
                 <div>
-                  <label className="block text-sm font-semibold mt-2 mb-1">
-                    신청자 정보
-                  </label>
+                  <label className="block text-sm font-semibold mt-2 mb-1">신청자 정보</label>
                   <div className="mb-2 p-2 border rounded bg-gray-50 text-sm text-gray-700">
-                    {user.username} ({user.id})
+                    {user.name} ({user.user_id})
                   </div>
-                  <label className="block text-sm font-semibold mt-2 mb-1">
-                    역할 선택
-                  </label>
-                  {renderRoleButtons(user.id)}
+                  <label className="block text-sm font-semibold mt-2 mb-1">역할 선택</label>
+                  {renderRoleButtons(user.user_id)}
                 </div>
               )}
 
               {applicantType === "팀" && (
                 <div className="space-y-4">
+                  {/* 로그인한 사용자 역할 선택 */}
+                  <div>
+                    <label className="block text-sm font-semibold mt-2 mb-1">내 역할 선택</label>
+                    <div className="mb-2 p-2 border rounded bg-gray-50 text-sm text-gray-700">
+                      {user.name} ({user.user_id})
+                    </div>
+                    {renderRoleButtons(user.user_id)}
+                  </div>
+
                   <label className="block text-sm font-semibold mb-1">팀 인원수</label>
                   <input
                     type="number"
@@ -287,81 +393,57 @@ export default function CompetitionDetail() {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="아이디 또는 이름 검색"
+                    placeholder="아이디 또는 닉네임 검색"
                     className="w-full border rounded px-2 py-1"
                   />
 
                   <div className="border rounded max-h-32 overflow-y-auto p-2 space-y-1">
-                    {users
-                      .filter(
-                        (u) =>
-                          u.username.includes(search) || u.id.includes(search)
-                      )
-                      .map((u) => {
-                        const isDisabled =
-                          teamSize &&
-                          selectedTeamMembers.length >= parseInt(teamSize);
-                        const alreadySelected = selectedTeamMembers.includes(u.id);
+                    {users.map((user) => {
+                        const isDisabled = teamSize && selectedTeamMembers.length >= parseInt(teamSize);
+                        const alreadySelected = selectedTeamMembers.includes(user.user_id);
+                      // .filter((u) => u.name.includes(search) || u.user_id.includes(search))
 
                         return (
                           <button
-                            key={u.id}
+                            key={user.user_id}
                             onClick={() => {
-                              if (isDisabled) {
-                                alert("입력한 팀 인원수를 초과할 수 없습니다.");
-                                return;
-                              }
-                              if (!alreadySelected) {
-                                setSelectedTeamMembers([
-                                  ...selectedTeamMembers,
-                                  u.id,
-                                ]);
-                              }
+                              if (isDisabled) return alert("입력한 팀 인원수를 초과할 수 없습니다.");
+                              if (!alreadySelected) setSelectedTeamMembers([...selectedTeamMembers, user.user_id]);
                             }}
                             disabled={isDisabled || alreadySelected}
                             className={`block w-full text-left px-2 py-1 rounded ${
-                              isDisabled || alreadySelected
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                : "hover:bg-sky-100"
+                              isDisabled || alreadySelected ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "hover:bg-sky-100"
                             }`}
                           >
-                            {u.username} ({u.id})
+                            {user.name} ({user.user_id})
                           </button>
                         );
                       })}
                   </div>
 
-                  {selectedTeamMembers.map((uid) => (
-                    <div key={uid} className="bg-gray-50 border rounded p-2">
+                  {selectedTeamMembers.map((user_id) => (
+                    <div key={user_id} className="bg-gray-50 border rounded p-2">
                       <div className="flex justify-between items-center mb-2">
-                        <span>{uid}</span>
+                        <span>{user_id}</span>
                         <button
                           onClick={() => {
-                            setSelectedTeamMembers(
-                              selectedTeamMembers.filter((x) => x !== uid)
-                            );
+                            setSelectedTeamMembers(selectedTeamMembers.filter((uid) => uid !== user_id));
                             const copy = { ...memberRoles };
-                            delete copy[uid];
+                            delete copy[user_id];
                             setMemberRoles(copy);
                           }}
                           className="text-red-500"
-                        >
-                          ×
-                        </button>
+                        >×</button>
                       </div>
-                      {renderRoleButtons(uid)}
+                      {renderRoleButtons(user_id)}
                     </div>
                   ))}
                 </div>
               )}
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button onClick={closeModal} className="border border-gray-300">
-                  취소
-                </Button>
-                <Button onClick={handleTeamSubmit} className="bg-sky-500 text-white">
-                  신청
-                </Button>
+                <Button onClick={closeModal} className="border border-gray-300">취소</Button>
+                <Button onClick={handleTeamSubmit} className="bg-sky-500 text-white">신청</Button>
               </div>
             </motion.div>
           </div>

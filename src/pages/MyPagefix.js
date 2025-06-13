@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 import api from "../api";
-
 
 function MyPagefix() {
   const [formData, setFormData] = useState({
@@ -17,14 +15,15 @@ function MyPagefix() {
     profile_image: null,
   });
 
-  const [isNicknameUnique, setIsNicknameUnique] = useState(null); // null: 검사 전, true/false
+  const [isNicknameUnique, setIsNicknameUnique] = useState(null);
   const [checkingNickname, setCheckingNickname] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (name === "nickname") {
-      setIsNicknameUnique(null); // 닉네임 바뀌면 상태 초기화
+      setIsNicknameUnique(null);
     }
   };
 
@@ -43,7 +42,7 @@ function MyPagefix() {
   const checkNickname = async () => {
     const nicknameRegex = /^[a-zA-Z0-9가-힣]+$/;
     if (!nicknameRegex.test(formData.nickname)) {
-      alert("닉네임을 입력해주세요.");
+      alert("닉네임은 공백이나 특수문자를 포함할 수 없습니다.");
       return;
     }
 
@@ -65,9 +64,7 @@ function MyPagefix() {
     } finally {
       setCheckingNickname(false);
     }
-  };  
-
-  const navigate = useNavigate();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,35 +79,55 @@ function MyPagefix() {
     }
 
     try {
-      // const token = localStorage.getItem("token");
       const token = localStorage.getItem("access_token");
 
+      // ✅ FormData 구성
       const data = new FormData();
       data.append("gender", formData.gender);
       data.append("university", formData.university);
       data.append("academic_year", formData.academic_year);
       data.append("degree_type", formData.degree_type);
       data.append("nickname", formData.nickname);
-
-      // ✅ 반드시 배열로 감싸고 JSON.stringify 해줘야 함
       data.append("languages", JSON.stringify(formData.languages));
-      data.append("interests", JSON.stringify(formData.interests));
-
+data.append("interests", JSON.stringify(formData.interests));
       if (formData.profile_image) {
         data.append("profile_image", formData.profile_image);
       }
 
-      await api.post("/api/profiles/create/", data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      // ✅ 프로필 존재 여부 확인
+      try {
+        await api.get("/api/profiles/me/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      alert("추가 정보 저장 완료");
+        // 있으면 PATCH
+        await api.patch("/api/profiles/me/", data, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        alert("프로필 수정 완료");
+      } catch (checkErr) {
+        if (checkErr.response?.status === 404) {
+          // 없으면 POST
+          await api.post("/api/profiles/create/", data, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          });
+          alert("프로필 생성 완료");
+        } else {
+          throw checkErr;
+        }
+      }
+
       navigate("/mypage");
     } catch (err) {
-      alert("저장 실패: " + (err.response?.data?.message || err.message));
+      console.error("❌ 저장 실패:", err.response?.data || err);
+      alert("저장 실패: " + JSON.stringify(err.response?.data || err.message));
     }
   };
 
@@ -118,34 +135,44 @@ function MyPagefix() {
     <div className="profile-container">
       <h2 className="profile-title">추가 정보 입력</h2>
       <form className="profile-form" onSubmit={handleSubmit}>
-        <label htmlFor="university">대학교</label>
+        <div style={{ marginBottom: "1rem", textAlign: "center" }}>
+          <img
+            src={
+              formData.profile_image
+                ? URL.createObjectURL(formData.profile_image)
+                : process.env.PUBLIC_URL + "/default-profile.png"
+            }
+            alt="프로필 미리보기"
+            style={{ width: "120px", height: "120px", objectFit: "cover", borderRadius: "50%" }}
+          />
+        </div>
+
+        <label>대학교</label>
         <input
           type="text"
           name="university"
-          placeholder="대학교명 입력"
           value={formData.university}
           onChange={handleChange}
           required
         />
 
-        <label htmlFor="degree_type">학적 구분</label>
+        <label>학적 구분</label>
         <select name="degree_type" value={formData.degree_type} onChange={handleChange} required>
           <option value="">선택</option>
           <option value="undergraduate">대학생</option>
           <option value="graduate">대학원생</option>
         </select>
 
-        <label htmlFor="academic_year">학년</label>
+        <label>학년</label>
         <input
           type="text"
           name="academic_year"
-          placeholder="학년"
           value={formData.academic_year}
           onChange={handleChange}
           required
         />
 
-        <label htmlFor="gender">성별</label>
+        <label>성별</label>
         <select name="gender" value={formData.gender} onChange={handleChange} required>
           <option value="">선택</option>
           <option value="male">남성</option>
@@ -153,7 +180,7 @@ function MyPagefix() {
           <option value="other">기타</option>
         </select>
 
-        <label htmlFor="languages">사용 언어 (여러 개 선택 시, ctrl을 누르고 선택해주세요.)</label>
+        <label>사용 언어 (ctrl 누르고 다중 선택)</label>
         <select
           name="languages"
           multiple
@@ -161,28 +188,19 @@ function MyPagefix() {
           onChange={(e) => handleMultiSelectChange(e, "languages")}
           required
         >
-          <option value="Korean">Korean</option>
-          <option value="English">English</option>
-          <option value="Vietnamese">Vietnamese</option>
-          <option value="Hindi">Hindi</option>
-          <option value="Chinese">Chinese</option>
-          <option value="Japanese">Japanese</option>
-          <option value="French">French</option>
-          <option value="German">German</option>
-          <option value="Spanish">Spanish</option>
-          <option value="Arabic">Arabic</option>
+          {["Korean", "English", "Vietnamese", "Hindi", "Chinese", "Japanese", "French", "German", "Spanish", "Arabic"].map((lang) => (
+            <option key={lang} value={lang}>{lang}</option>
+          ))}
         </select>
         <ul className="selected-list">
-          {formData.languages.map((lang, idx) => (
-            <li key={idx}>{lang}</li>
-          ))}
+          {formData.languages.map((lang, idx) => <li key={idx}>{lang}</li>)}
         </ul>
-        <label htmlFor="nickname">닉네임</label>
+
+        <label>닉네임</label>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <input
             type="text"
             name="nickname"
-            placeholder="닉네임"
             value={formData.nickname}
             onChange={handleChange}
             required
@@ -192,7 +210,6 @@ function MyPagefix() {
             type="button"
             onClick={checkNickname}
             disabled={checkingNickname}
-            style={{ whiteSpace: "nowrap" }}
           >
             {checkingNickname ? "확인 중..." : "중복 확인"}
           </button>
@@ -200,7 +217,7 @@ function MyPagefix() {
         {isNicknameUnique === true && <div style={{ color: "green" }}>사용 가능한 닉네임입니다.</div>}
         {isNicknameUnique === false && <div style={{ color: "red" }}>이미 사용 중인 닉네임입니다.</div>}
 
-        <label htmlFor="interests">관심 분야(ctrl을 누르고 선택해주세요.)</label>
+        <label>관심 분야 (ctrl 누르고 다중 선택)</label>
         <select
           name="interests"
           multiple
@@ -208,39 +225,20 @@ function MyPagefix() {
           onChange={(e) => handleMultiSelectChange(e, "interests")}
           required
         >
-          <option value="창업">창업</option>
-          <option value="아이디어">아이디어</option>
-          <option value="슬로건">슬로건</option>
-          <option value="네이밍">네이밍</option>
-          <option value="마케팅">마케팅</option>
-          <option value="사진">사진</option>
-          <option value="영상">영상</option>
-          <option value="포스터">포스터</option>
-          <option value="로고">로고</option>
-          <option value="상품">상품</option>
-          <option value="캐릭터">캐릭터</option>
-          <option value="그림">그림</option>
-          <option value="웹툰">웹툰</option>
-          <option value="광고">광고</option>
-          <option value="도시건축">도시건축</option>
-          <option value="논문">논문</option>
-          <option value="수기">수기</option>
-          <option value="시">시</option>
-          <option value="시나리오">시나리오</option>
-          <option value="공학">공학</option>
-          <option value="과학">과학</option>
-          <option value="음악">음악</option>
-          <option value="댄스">댄스</option>
-          <option value="e스포츠">e스포츠</option>
-          <option value="기타">기타</option>
+          {[
+            "창업", "아이디어", "슬로건", "네이밍", "마케팅",
+            "사진", "영상", "포스터", "로고", "상품", "캐릭터", "그림",
+            "웹툰", "광고", "도시건축", "논문", "수기", "시", "시나리오",
+            "공학", "과학", "음악", "댄스", "e스포츠", "기타"
+          ].map((interest) => (
+            <option key={interest} value={interest}>{interest}</option>
+          ))}
         </select>
         <ul className="selected-list">
-          {formData.interests.map((item, idx) => (
-            <li key={idx}>{item}</li>
-          ))}
+          {formData.interests.map((item, idx) => <li key={idx}>{item}</li>)}
         </ul>
 
-        <label htmlFor="profile_image">프로필 사진</label>
+        <label>프로필 사진</label>
         <input type="file" accept="image/*" onChange={handleFileChange} />
 
         <button type="submit">저장</button>

@@ -1,255 +1,476 @@
-import React, { useState, useEffect, useContext } from "react";
+// CompetitionDetail.jsx
+
 import { useParams, useNavigate } from "react-router-dom";
-import { UserContext } from "../contexts/UserContext";
-import api from "../api";            // 인증 포함된 axios 인스턴스
-import publicApi from "../api_public"; // 인증 없이 조회만 할 때 사용
-import { Link } from "react-router-dom"
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useUser } from "../contexts/UserContext";
+import publicApi from "../api_public";
+import api from "../api"; 
 
-export default function PostDetailPage() {
+
+
+const roleOptions = [
+  "기획", "디자이너", "UX/UI 설계자", "촬영/감독",
+  "영상 편집자", "사진 후보정자", "발표자/피칭", "분석/리서처",
+  "자료 조사", "데이터 수집/분석", "문서화 담당자", "브랜딩/마케팅",
+  "통역/언어", "프론트엔드 개발자", "백엔드 개발자", "AI/데이터 개발자",
+  "음향/음악 담당자", "게이머/플레이어", "연출/무대기획자"
+];
+
+const Button = ({ children, className = "", ...props }) => (
+  <button
+    {...props}
+    type={props.type || "button"}
+    className={`px-4 py-2 rounded ${className}`}
+  >
+    {children}
+  </button>
+);
+
+export default function CompetitionDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { user } = useContext(UserContext);
+  const navigate = useNavigate();       // useNavigate 훅을 추가
+  const { user } = useUser();
 
-  const [post, setPost] = useState(null);
-  const [comment, setComment] = useState("");
-  const [commentList, setCommentList] = useState([]);
-  const [likesCount, setLikesCount] = useState(0);
-  const [liked, setLiked] = useState(false); // 내가 이미 좋아요했는지 여부
-  const [loading, setLoading] = useState(true);
+  const [competition, setCompetition] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [detailInfo, setDetailInfo] = useState(null);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [applicantType, setApplicantType] = useState("");
+  const [users, setUsers] = useState([]);
+  const [search, setSearch] = useState("");
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState([]);
+  const [memberRoles, setMemberRoles] = useState({});
+  const [teamSize, setTeamSize] = useState("");
 
+  // 1) competition 상세 정보 불러오기
   useEffect(() => {
-    const fetchPostAndLikeStatus = async () => {
-      try {
-        // 1. 게시글 및 기존 좋아요 개수, 댓글 가져오기
-        const resPost = await publicApi.get(`/api/community/posts/${id}/`);
-        setPost(resPost.data);
-        setCommentList(resPost.data.comments || []);
-        setLikesCount(resPost.data.likes_count || 0);
+    publicApi.get(`/api/competition/${id}/`)
+      .then((res) => {
+        setCompetition(res.data);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error("상세 정보 불러오기 실패", err);
+        setIsLoading(false);
+      });
+  }, [id]);
 
-        // 2. 현재 사용자가 이 게시글을 좋아요했는지 확인
-        //    API: GET /api/community/likes/?post=<id>&user=<user.id>
-        //    만약 필터링이 없다면, 모든 좋아요를 가져온 뒤 클라이언트에서 검사해도 됩니다.
-        //    여기서는 간단히 GET으로 좋아요 전체를 불러오고, 클라이언트에서 user.id와 post.id가 일치하는 항목이 있는지 확인합니다.
-        if (user) {
-          const resLikes = await api.get(`/api/community/likes/`);
-          // resLikes.data가 [{ id, post: <postId>, user: <userId>, ... }, ...]
-          const existing = resLikes.data.find(
-            (like) => like.post === resPost.data.id && like.user === user.id
-          );
-          if (existing) {
-            setLiked(true);
-          }
-        }
+  // 2) competition.link가 있으면 크롤링해서 detailInfo 업데이트
+  useEffect(() => {
+    if (!competition || !competition.link) return;
+
+    const fetchDetailInfo = async () => {
+      try {
+        const encodedUrl = encodeURIComponent(competition.link);
+        const res = await publicApi.get(
+          `/api/competition/crawl/detail/?url=${encodedUrl}`
+        );
+        setDetailInfo(res.data);
       } catch (err) {
-        console.error("게시글 조회 오류:", err);
-        setPost(null);
-      } finally {
-        setLoading(false);
+        console.error("상세 크롤링 실패", err);
+      }
+    };
+    fetchDetailInfo();
+  }, [competition]);
+
+  //같이 할 팀원 검색
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (search.trim() === "") {
+        setUsers([]);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await api.get(`/api/profiles/search_team/?nickname=${search}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUsers(res.data);  // ✅ 다수 반환을 기대
+      } catch (err) {
+        setUsers([]);  // 검색 실패 시 목록 초기화
       }
     };
 
-    fetchPostAndLikeStatus();
-  }, [id, user]);
+    fetchUsers();
+  }, [search]);
 
-  const formatDate = (date) =>
-    new Date(date).toLocaleString("ko-KR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const closeModal = () => {
+    setShowTeamModal(false);
+    setApplicantType("");
+    setSelectedTeamMembers([]);
+    setSearch("");
+    setMemberRoles({});
+    setTeamSize("");
+  };
 
-  // 댓글 작성
-  const handleAddComment = async () => {
-    if (comment.trim() === "") return;
-
+  const handleTeamSubmit = async () => {
     const token = localStorage.getItem("access_token");
-    if (!token) {
-      alert("로그인 후 댓글을 작성할 수 있습니다.");
-      return;
-    }
+
+    if (!applicantType) return alert("지원 방식을 선택해주세요.");
 
     try {
-      const res = await api.post(
-        "/api/community/comments/",
-        {
-          post: post.id,
-          content: comment,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setCommentList((prev) => [...prev, res.data]);
-      setComment("");
-    } catch (err) {
-      console.error("댓글 작성 오류:", err.response?.data || err.message);
-      alert("댓글 작성에 실패했습니다.");
-    }
-  };
+      if (applicantType === "개인") {
+        
+        const payload = {
+          role: Array.isArray(memberRoles[user.user_id]) && memberRoles[user.user_id].length > 0
+            ? memberRoles[user.user_id]
+            : ["없음"],
+          in_team: false,
+          desired_partner: "",
+          competition_id: competition.id,
+          competition: competition.id //AI 알고리즘으로 넘기는 용도
+        };
 
-  // 좋아요 버튼 클릭
-  const handleAddLike = async () => {
-    if (!user) {
-      alert("로그인 후 좋아요를 누를 수 있습니다.");
-      return;
-    }
-    if (liked) return; // 이미 눌렀으면 무시
-
-    try {
-      // POST /api/community/likes/ { post: post.id }
-      const res = await api.post(
-        "/api/community/likes/",
-        { post: post.id },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-          },
+        try {
+          const res = await api.post("/api/matching/request/", payload, {
+            headers: { Authorization: `Bearer ${token}` }  // ✅ 추가
+          });
+          console.log("✅ 서버 응답:", res.data);
+          alert("✅ 신청 완료!");
+        } catch (err) {
+          console.error("❌ 서버 오류:", err.response?.status, err.response?.data);
+          alert("❌ 팀매칭 신청 실패: " + (err.response?.data?.message || err.message));
         }
-      );
-      // 성공하면 liked를 true로, 카운트 +1
-      setLiked(true);
-      setLikesCount((prev) => prev + 1);
-    } catch (err) {
-      console.error("좋아요 오류:", err.response?.data || err.message);
-      // 400 에서 이미 좋아요를 누른 상태라면, setLiked(true)만 해도 됩니다.
-      if (err.response?.status === 400) {
-        setLiked(true);
       } else {
-        alert("좋아요에 실패했습니다.");
+        if (selectedTeamMembers.length === 0) return alert("팀원을 선택해주세요.");
+        
+        // const filteredTeamMembers = selectedTeamMembers.filter((uid) => uid !== user.user_id);
+
+        const members = [
+          {
+            user_id: user.user_id,
+            role: Array.isArray(memberRoles[user.user_id]) && memberRoles[user.user_id].length > 0
+              ? memberRoles[user.user_id]
+              : ["없음"]
+          },
+          // ...selectedTeamMembers.map((user_id) => ({
+          //   user_id,
+          //   role: Array.isArray(memberRoles[user_id]) && memberRoles[user_id].length > 0
+          //     ? memberRoles[user_id]
+          //     : ["없음"]
+          ...selectedTeamMembers
+            .filter((id) => id !== user.user_id) // 혹시 중복될 경우 대비
+            .map((id) => ({
+              user_id: id,
+              role: Array.isArray(memberRoles[id]) && memberRoles[id].length > 0
+                ? memberRoles[id]
+                : ["없음"]
+          }))
+      ];
+
+        const payload = {
+          members,
+          in_team: true,
+          desired_partner: "",  // 추후에 팀장 지정 등 확장 가능
+          role : ["dummy"], // 어차피 역할은 members에 들어가있음
+          competition_id : competition.id,
+          
+          competition: competition.id //AI 알고리즘으로 넘기는 용도
+
+        };
+
+        await api.post("/api/matching/request/", payload, {
+            headers: { Authorization: `Bearer ${token}` }  // ✅ 추가
+          });
+        
+        alert("✅ 신청 완료!");
+      } 
+
+      closeModal();
+    } catch (err) {
+        console.error("❌ 팀매칭 신청 실패:", err.response?.status, err.response?.data);
+        alert("팀매칭 신청 실패: " + (err.response?.data?.message || err.message));
       }
-    }
-  };
+    };
 
-  if (loading) {
-    return <p className="p-6 text-center">로딩 중...</p>;
-  }
+  // const handleTeamSubmit = async () => {
+  //   const token = localStorage.getItem("access_token");
 
-  if (!post) {
+  //   if (!applicantType) {
+  //     alert("지원 방식을 선택해주세요.");
+  //     return;
+  //   }
+
+  //   if (applicantType === "개인") {
+  //     if (!memberRoles[user.id]) {
+  //       alert("역할을 선택해주세요.");
+  //       return;
+  //     }
+  //     const payload = {
+  //       competitionId: competition.id,
+  //       applicantType,
+  //       members: [{ id: user.id, role: memberRoles[user.id] }],
+  //     };
+  //     await api.post("/api/matching/request/", payload);
+  //     alert("✅ 신청 완료!");
+  //     closeModal();
+  //   } else {
+  //     if (selectedTeamMembers.length === 0) {
+  //       alert("팀원을 선택해주세요.");
+  //       return;
+  //     }
+  //     const incomplete = selectedTeamMembers.some((id) => !memberRoles[id]);
+  //     if (incomplete) {
+  //       alert("모든 팀원의 역할을 선택해주세요.");
+  //       return;
+  //     }
+
+  //     const members = selectedTeamMembers.map((id) => ({
+  //       id,
+  //       role: memberRoles[id],
+  //     }));
+
+  //     const payload = {
+  //       competitionId: competition.id,
+  //       applicantType,
+  //       members,
+  //     };
+
+  //     await api.post("/api/matching/request/", payload);
+  //     alert("✅ 신청 완료!");
+  //     closeModal();
+  //   }
+  // };
+
+  const renderRoleButtons = (user_id) => {
+    const selectedRoles = memberRoles[user_id] || [];
+
+    const toggleRole = (role) => {
+      const updatedRoles = selectedRoles.includes(role)
+        ? selectedRoles.filter((r) => r !== role)
+        : [...selectedRoles, role];
+
+      setMemberRoles({ ...memberRoles, [user_id]: updatedRoles });
+    };
+
     return (
-      <div className="p-6 min-h-screen flex flex-col items-center justify-center">
-        <h2 className="text-2xl font-bold mb-4">게시글을 찾을 수 없습니다.</h2>
-        <button
-          onClick={() => navigate("/community")}
-          className="bg-sky-400 text-white py-2 px-4 rounded"
-        >
-          커뮤니티로 돌아가기
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex min-h-screen bg-white">
-      <aside className="w-60 border-r border-gray-200 p-6 hidden md:block">
-        <h2 className="text-xl font-bold mb-4">카테고리</h2>
- 
-<ul className="space-y-3 text-gray-700">
-  {["자유게시판", "홍보게시판", "후기모음", "질문게시판"].map((cat) => (
-    <li key={cat}>
-      {cat === post.category ? (
-        <span className="text-sky-600 font-semibold">{cat}</span>
-      ) : (
-        <Link
-          to={`/community?category=${cat}`}
-          className="hover:text-sky-600 transition"
-        >
-          {cat}
-        </Link>
-      )}
-    </li>
-  ))}
-</ul>
-      </aside>
-
-      <main className="flex-1 p-6 max-w-3xl mx-auto">
-        <button
-          onClick={() => navigate("/community")}
-          className="text-sky-600 text-sm mb-4 hover:underline"
-        >
-          ← 목록으로
-        </button>
-
-        <p className="text-gray-500 mb-2">게시판: {post.category}</p>
-
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <div className="flex items-center gap-3">
-            <img
-              src={post.author?.avatar || "/default.png"}
-              alt="프로필"
-              className="w-10 h-10 rounded-full"
-            />
-            <div>
-              <p className="text-sm font-medium text-gray-800">
-                {post.author?.name || "익명"}
-              </p>
-              <p className="text-xs text-gray-500">{formatDate(post.created_at)}</p>
-            </div>
-          </div>
-          <button className="text-sm text-red-500 border px-3 py-1 rounded hover:bg-red-50">
-            신고하기
-          </button>
-        </div>
-
-        <h1 className="text-2xl font-bold mb-4">{post.title}</h1>
-        <p className="text-lg text-gray-800 whitespace-pre-line mb-8">
-          {post.content}
-        </p>
-
-        {/* 좋아요 버튼과 카운트 */}
-        <div className="flex items-center gap-3 mb-10">
+      <div className="grid grid-cols-2 gap-2">
+        {roleOptions.map((role) => (
           <button
-            onClick={handleAddLike}
-            disabled={liked} // 이미 좋아요한 경우 비활성화
-            className={`text-2xl transition ${
-              liked ? "text-red-300 cursor-not-allowed" : "text-red-500 hover:scale-110"
+            key={role}
+            type="button"
+            onClick={() => toggleRole(role)}
+            className={`border px-3 py-1 rounded text-sm ${
+              selectedRoles.includes(role)
+                ? "border-sky-500 bg-sky-100 text-sky-700 font-semibold"
+                : "border-gray-300"
             }`}
           >
-            ♥
+            {role}
           </button>
-          <span className="text-gray-700">{likesCount}</span>
-        </div>
+        ))}
+      </div>
+    );
+  };
 
-        {/* 댓글 입력 */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">댓글</h2>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="댓글을 입력하세요"
-            className="w-full border p-3 rounded h-24"
-          />
-          <button
-            onClick={handleAddComment}
-            className="mt-2 bg-sky-500 text-white py-2 px-4 rounded hover:bg-sky-600"
-          >
-            댓글 달기
-          </button>
-        </div>
+  if (isLoading) return <div>로딩 중...</div>;
+  if (!competition) return <div>공모전 정보를 불러오지 못했습니다.</div>;
 
-        {/* 댓글 목록 */}
-        <ul className="space-y-4">
-          {commentList.map((c) => (
-            <li key={c.id} className="border-b pb-2">
-              <div className="flex items-center gap-2 mb-1">
-                <img
-                  src={c.author?.avatar || "/default.png"}
-                  alt="댓글 작성자"
-                  className="w-8 h-8 rounded-full"
-                />
-                <span className="text-sm font-medium">{c.author?.name || "익명"}</span>
-                <span className="text-xs text-gray-500 ml-2">
-                  {formatDate(c.created_at)}
-                </span>
+  return (
+    <div className="p-8">
+      {/* ────────────────────────────────────────────────────────────────────────────
+          뒤로 가기 버튼을 추가했습니다.  
+          navigate(-1)은 브라우저 히스토리에서 한 단계 뒤로 돌아가고,  
+          만약 히스토리가 없으면 /competition(목록)으로 강제 이동합니다.
+      ──────────────────────────────────────────────────────────────────────────── */}
+      <Button
+        onClick={() => {
+          // 히스토리 스택에 이전 페이지가 있으면 뒤로 가고, 없으면 "/competition"으로 이동
+          if (window.history.state && window.history.state.idx > 0) {
+            navigate(-1);
+          } else {
+            navigate("/competition");
+          }
+        }}
+        className="mb-4 bg-gray-200 text-gray-800 hover:bg-gray-300"
+      >
+        ← 뒤로 가기
+      </Button>
+
+      {/* ──────────────────────────────────────────────────────────────────────────── */}
+      <h1 className="text-2xl font-bold mb-4">{competition.title}</h1>
+
+      {user?.is_staff && (
+        <button
+          onClick={async () => {
+            if (!window.confirm("정말 이 공모전에 대해 AI 팀 매칭을 실행하시겠습니까?")) return;
+            try {
+              const res = await api.post("/api/ai-matching/run/", {
+                competition: competition.id
+              });
+              alert("✅ AI 팀 매칭이 성공적으로 실행되었습니다.");
+              console.log(res.data);  // optional: 결과 확인
+            } catch (err) {
+              console.error("❌ AI 매칭 실패", err.response?.data);
+              alert("❌ 매칭 중 오류 발생: " + (err.response?.data?.error || err.message));
+            }
+          }}
+          className="bg-green-600 text-white px-4 py-2 rounded ml-4 hover:bg-green-700"
+        >
+          AI 팀 매칭 실행 (관리자)
+        </button>
+      )}
+
+      <button
+        onClick={() => {
+          if (!user) {
+            alert("로그인 후 이용해주세요.");
+            return;
+          }
+          setShowTeamModal(true);
+        }}
+        className="bg-blue-500 text-white px-4 py-2 rounded mb-6"
+      >
+        팀매칭 신청
+      </button>
+
+      {detailInfo && (
+        <div className="mt-8 space-y-6">
+          {(detailInfo.image_url || competition.image_url) && (
+            <div>
+              <h2 className="text-lg font-semibold mb-2">포스터</h2>
+              <img
+                src={detailInfo.image_url || competition.image_url}
+                alt="공모전 포스터"
+                className="max-w-md rounded border"
+              />
+            </div>
+          )}
+
+          {detailInfo.description && (
+            <div>
+              <h2 className="text-lg font-semibold mb-2">상세 설명</h2>
+              <div
+                className="prose prose-lg"
+                dangerouslySetInnerHTML={{ __html: detailInfo.description }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+
+      {/* ────────────────────────────────────────────────────────────────────────────
+          팀매칭 모달
+      ──────────────────────────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showTeamModal && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={closeModal}>
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25 }}
+              className="bg-white p-6 rounded-xl shadow-lg w-[450px] space-y-4 max-h-[90vh] overflow-y-auto"
+            >
+              <h2 className="text-xl font-bold text-sky-700">팀매칭 신청</h2>
+              <div>
+                <label className="block text-sm font-semibold mb-1">지원 방식</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="applicantType" value="개인" checked={applicantType === "개인"} onChange={(e) => setApplicantType(e.target.value)} /> 개인
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="applicantType" value="팀" checked={applicantType === "팀"} onChange={(e) => setApplicantType(e.target.value)} /> 팀
+                  </label>
+                </div>
               </div>
-              <p className="text-gray-800">{c.content}</p>
-            </li>
-          ))}
-        </ul>
-      </main>
+
+              {applicantType === "개인" && (
+                <div>
+                  <label className="block text-sm font-semibold mt-2 mb-1">신청자 정보</label>
+                  <div className="mb-2 p-2 border rounded bg-gray-50 text-sm text-gray-700">
+                    {user.name} ({user.user_id})
+                  </div>
+                  <label className="block text-sm font-semibold mt-2 mb-1">역할 선택</label>
+                  {renderRoleButtons(user.user_id)}
+                </div>
+              )}
+
+              {applicantType === "팀" && (
+                <div className="space-y-4">
+                  {/* 로그인한 사용자 역할 선택 */}
+                  <div>
+                    <label className="block text-sm font-semibold mt-2 mb-1">내 역할 선택</label>
+                    <div className="mb-2 p-2 border rounded bg-gray-50 text-sm text-gray-700">
+                      {user.name} ({user.user_id})
+                    </div>
+                    {renderRoleButtons(user.user_id)}
+                  </div>
+
+                  <label className="block text-sm font-semibold mb-1">팀 인원수</label>
+                  <input
+                    type="number"
+                    value={teamSize}
+                    onChange={(e) => setTeamSize(e.target.value)}
+                    min={1}
+                    className="w-full border rounded px-2 py-1"
+                  />
+
+                  <label className="block text-sm font-semibold mb-1">팀원 검색</label>
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="아이디 또는 닉네임 검색"
+                    className="w-full border rounded px-2 py-1"
+                  />
+
+                  <div className="border rounded max-h-32 overflow-y-auto p-2 space-y-1">
+                    {users.map((user) => {
+                        const isDisabled = teamSize && selectedTeamMembers.length >= parseInt(teamSize);
+                        const alreadySelected = selectedTeamMembers.includes(user.user_id);
+                      // .filter((u) => u.name.includes(search) || u.user_id.includes(search))
+
+                        return (
+                          <button
+                            key={user.user_id}
+                            onClick={() => {
+                              if (isDisabled) return alert("입력한 팀 인원수를 초과할 수 없습니다.");
+                              if (!alreadySelected) setSelectedTeamMembers([...selectedTeamMembers, user.user_id]);
+                            }}
+                            disabled={isDisabled || alreadySelected}
+                            className={`block w-full text-left px-2 py-1 rounded ${
+                              isDisabled || alreadySelected ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "hover:bg-sky-100"
+                            }`}
+                          >
+                            {user.name} ({user.user_id})
+                          </button>
+                        );
+                      })}
+                  </div>
+
+                  {selectedTeamMembers.map((user_id) => (
+                    <div key={user_id} className="bg-gray-50 border rounded p-2">
+                      <div className="flex justify-between items-center mb-2">
+                        <span>{user_id}</span>
+                        <button
+                          onClick={() => {
+                            setSelectedTeamMembers(selectedTeamMembers.filter((uid) => uid !== user_id));
+                            const copy = { ...memberRoles };
+                            delete copy[user_id];
+                            setMemberRoles(copy);
+                          }}
+                          className="text-red-500"
+                        >×</button>
+                      </div>
+                      {renderRoleButtons(user_id)}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button onClick={closeModal} className="border border-gray-300">취소</Button>
+                <Button onClick={handleTeamSubmit} className="bg-sky-500 text-white">신청</Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

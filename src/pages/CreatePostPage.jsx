@@ -1,8 +1,9 @@
+//CreatePostPage
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
-import api from "../api"; 
-import { useUser } from "../contexts/UserContext"; // ✅ 수정된 부분
+import api from "../api";
+import { useUser } from "../contexts/UserContext";
 
 export default function CreatePostPage() {
   const tabs = ["자유게시판", "홍보게시판", "후기모음", "질문게시판"];
@@ -10,15 +11,12 @@ export default function CreatePostPage() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isAnonymous, setIsAnonymous] = useState(false); // ✅ 익명 여부
   const navigate = useNavigate();
-  const { user } = useUser(); // ✅ 수정된 부분
+  const { user } = useUser();
 
-  // ✅ 페이지 진입 시 로그인 확인
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    // console.log("🧪 user from useUser():", user);
-    // console.log("🧪 access_token:", token);
-  
     if (!token) {
       alert("로그인이 필요한 기능입니다.");
       navigate("/community");
@@ -26,18 +24,14 @@ export default function CreatePostPage() {
     }
 
     if (!user) {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      // setUser(JSON.parse(savedUser)); // 필요시 setUser 가능
-    } else {
-      alert("로그인이 필요한 기능입니다.");
-      navigate("/community");
+      const savedUser = localStorage.getItem("user");
+      if (!savedUser) {
+        alert("로그인이 필요한 기능입니다.");
+        navigate("/community");
+      }
     }
-  }
-}, [user, navigate]);
-  
+  }, [user, navigate]);
 
-  // 게시판 이름 → 백엔드 category 코드 매핑
   const convertTabToCategory = (tab) => {
     switch (tab) {
       case "자유게시판": return "free";
@@ -63,7 +57,7 @@ export default function CreatePostPage() {
         title,
         content,
         category: convertTabToCategory(tab),
-        
+        is_anonymous: isAnonymous, // ✅ 포함
       });
       alert("글 작성이 완료되었습니다!");
       navigate("/community");
@@ -78,7 +72,7 @@ export default function CreatePostPage() {
       <h1 className="text-3xl font-bold mb-8">글 작성</h1>
 
       <div className="flex flex-col gap-6">
-        {/* 카테고리 선택 드롭다운 */}
+        {/* 카테고리 선택 */}
         <div className="relative">
           <button
             type="button"
@@ -109,6 +103,29 @@ export default function CreatePostPage() {
           )}
         </div>
 
+        {/* ✅ 익명/공개 선택 */}
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="anonymity"
+              checked={!isAnonymous}
+              onChange={() => setIsAnonymous(false)}
+            />
+            공개 작성
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="anonymity"
+              checked={isAnonymous}
+              onChange={() => setIsAnonymous(true)}
+            />
+            익명 작성
+          </label>
+        </div>
+
+        {/* 제목 입력 */}
         <input
           type="text"
           placeholder="제목을 입력하세요"
@@ -117,6 +134,7 @@ export default function CreatePostPage() {
           className="border p-3 rounded text-lg"
         />
 
+        {/* 내용 입력 */}
         <textarea
           placeholder="내용을 입력하세요"
           value={content}
